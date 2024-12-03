@@ -1,0 +1,132 @@
+{% extends "customer/base.html" %}
+{% block title %}Services{% endblock %}
+{% block main %}
+<style>
+    .card-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
+        transition: background-color 0.3s ease;
+    }
+    .card-overlay:hover {
+        background-color: rgba(0, 0, 0, 0.7); /* Darker on hover */
+    }
+    </style>
+    
+{% if services %}
+  <section class="pt-5 pb-5">
+    <div class="container">
+        <!-- Sorting Dropdown -->
+        <div class="row mb-4">
+            <div class="col">
+                <form method="GET" action="">
+                    <div class="form-inline w-100">
+                        <div class="form-group flex-grow-1 mr-2">
+                            <label for="search" class="mr-2">Search:</label>
+                            <input type="text" id="search" class="form-control" placeholder="Search services" onkeyup="filterServices()">
+                        </div>
+                        
+                        <!-- Sort by Name -->
+                        <div class="form-group mr-2">
+                            <label for="sort_by" class="mr-2">Sort by:</label>
+                            <select id="sort_by" name="sort_by" class="form-control">
+                                <option value="name" {% if services['sort_by'] == 'name' %}selected{% endif %}>Name</option>
+                                <option value="starting_professional_price" {% if services['sort_by'] == 'starting_professional_price' %}selected{% endif %}>Price</option>
+                                <option value="date_created" {% if services['sort_by'] == 'date_created' %}selected{% endif %}>Date Created</option>
+                            </select>
+                        </div>
+        
+                        <!-- Sort Direction (Ascending or Descending) -->
+                        <div class="form-group mr-2">
+                            <label for="direction" class="mr-2">Direction:</label>
+                            <select id="direction" name="direction" class="form-control">
+                                <option value="asc" {% if services['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                                <option value="desc" {% if services['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                            </select>
+                        </div>
+        
+                        <button type="submit" class="btn btn-primary">Sort</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+
+        <!-- Service Grid -->
+        <div class="row" id="service-grid">
+            {% for service in services['data'] %}
+            {% if service['professionals'] %}
+            <div class="col-md-6 col-lg-3 mb-4 service-card" data-name="{{ service['name'] | lower }}" data-category="{{ service['category']['name'] | lower }}">
+                <div class="card shadow-lg border-0 rounded overflow-hidden">
+                    <div class="position-relative text-center">
+                        <a href="{{url_for('customer.service', id=service['id'])}}">
+                            <img src="{{ url_for('static', filename='images/' ~ service['image']) }}" 
+                                 class="card-img-top" 
+                                 alt="image" 
+                                 style="height: 200px; width:200px; object-fit: contain;">
+                            
+                            {% if service['starting_professional_price'] > 0 and service['price'] > 0 %}
+                            {% set discount_percentage = ((service['price'] - service['starting_professional_price']) / service['price']) * 100 %}
+                            {% if discount_percentage > 0 %}
+                                <span class="badge badge-danger" style="position: absolute; top: 10px; right: 10px; z-index: 10;">{{ discount_percentage | round(2) }}% OFF</span>
+                            {% endif %}
+                            {% endif %}
+                        </a>
+                    </div>
+                    <h5 class="bg-secondary text-white pt-3 pb-3 mb-1 text-center">{{ service['name'] }}</h5>
+                    <div class="mb-3 pt-3 pb-3 bg-secondary text-white d-flex justify-content-center align-items-center text-center">
+                        <h5 class="text-white mb-0">
+                            <span style="font-size: 0.75em">From</span> <span style="color:yellow; font-family: 'Roboto', sans-serif;">₹{{ service['starting_professional_price'] | indian_rupee_format if service['starting_professional_price'] else 'NA' }}</span>
+                            {% if service['price'] > service['starting_professional_price'] %}
+                            <span style="font-size: 0.75em; font-family: 'Roboto', sans-serif;"><s class="ml-1">₹{{ service['price'] | indian_rupee_format }}</s></span>
+                            {%endif%}
+                        </h5>
+                    </div>
+                    
+                    <div class="row justify-content-between pl-4 pr-4 text-center">
+                        <div class="mb-3">
+                            <span class="badge badge-success">Total Professionals</span>
+                            <h6 class="text-dark font-weight-bold">{{ service['professionals'] | length }}</h6>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-danger">Total Requests</span>
+                            <h6 class="text-dark font-weight-bold">{{ service['total_service_requests'] }}</h6>
+                        </div>
+                    </div>
+
+                    <div class="card-footer text-muted text-center">
+                        <small>{{ service['description'][:50] }}...</small>
+                        <div class="mt-2">
+                            <a href="{{url_for('customer.service', id=service['id'])}}" class="btn btn-primary">View</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+
+<script>
+    function filterServices() {
+        const searchInput = document.getElementById('search').value.toLowerCase();
+        const serviceCards = document.querySelectorAll('.service-card');
+    
+        serviceCards.forEach(card => {
+            const serviceName = card.getAttribute('data-name');
+            const serviceCategory = card.getAttribute('data-category');
+            if (serviceName.includes(searchInput) | serviceCategory.includes(searchInput)) {
+                card.style.display = 'block'; // Show matching card
+            } else {
+                card.style.display = 'none'; // Hide non-matching card
+            }
+        });
+    }
+    </script>
+{% endif %}
+{% endblock %}

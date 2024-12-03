@@ -1,0 +1,262 @@
+{% extends "admin/base.html" %}
+{% block title %}Messages{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        <h1 class="mb-4">Messages</h1>
+        <!-- MESSAGES -->
+        <div class="container-fluid mt-5">
+            {% if messages %}
+            <div class="row mb-4 align-items-center">
+                <div class="col">
+                    <h2 class="mb-0">Messages</h2>
+                </div>
+                <div class="col text-right">
+                    <form method="GET" class="d-inline">
+                        <label for="per-page" class="mr-2">per page:</label>
+                        <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                            <option value="5" {% if messages['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if messages['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if messages['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if messages['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="col text-right">
+                <form class="d-flex justify-content-start" method="GET">
+                    <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control me-2" placeholder="Search for messages..." aria-label="Search" />
+                    <button class="btn btn-light" disabled>
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            </div>
+           
+                <table id="search-table" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="{{ url_for('admin.messages', sort_by='id', direction='asc' if messages['direction'] == 'desc' or messages['sort_by'] != 'id' else 'desc', per_page=messages['pagination']['per_page']) }}">
+                                    ID
+                                    {% if messages['sort_by'] == 'id' %}
+                                        {% if messages['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('admin.messages', sort_by='name', direction='asc' if messages['direction'] == 'desc' or messages['sort_by'] != 'name' else 'desc', per_page=messages['pagination']['per_page']) }}">
+                                    Name
+                                    {% if messages['sort_by'] == 'name' %}
+                                        {% if messages['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('admin.messages', sort_by='email', direction='asc' if messages['direction'] == 'desc' or messages['sort_by'] != 'email' else 'desc', per_page=messages['pagination']['per_page']) }}">
+                                    Email
+                                    {% if messages['sort_by'] == 'email' %}
+                                        {% if messages['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('admin.messages', sort_by='phone', direction='asc' if messages['direction'] == 'desc' or messages['sort_by'] != 'phone' else 'desc', per_page=messages['pagination']['per_page']) }}">
+                                    Phone
+                                    {% if messages['sort_by'] == 'phone' %}
+                                        {% if messages['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('admin.messages', sort_by='message', direction='asc' if messages['direction'] == 'desc' or messages['sort_by'] != 'message' else 'desc', per_page=messages['pagination']['per_page']) }}">
+                                    Message
+                                    {% if messages['sort_by'] == 'message' %}
+                                        {% if messages['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('admin.messages', sort_by='date_created', direction='asc' if messages['direction'] == 'desc' or messages['sort_by'] != 'date_created' else 'desc', per_page=messages['pagination']['per_page']) }}">
+                                    Date Created
+                                    {% if messages['sort_by'] == 'date_created' %}
+                                        {% if messages['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="#">Action</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <div id="results"></div>
+                        {% for message in messages['data'] %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('admin.message', id=message['id']) }}">{{ message['id'] }}</a>
+                                </td>
+                                <td>{{ message['name'] }}</td>
+                                <td>{{ message['email'] }}</td>
+                                <td>{{ message['phone'] }}</td>
+                                <td>
+                                    {{ message['message'][:30] }}
+                                    {% if message['message']|length > 30 %}...{% endif %}
+                                </td>
+                                <td>{{ message['date_created'] }}</td>
+                                <td>
+                                    <div class="row justify-content-center">
+                                        <a href="{{ url_for('admin.message', id=message['id']) }}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ message['id'] }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- Confirmation Modal -->
+                                <div class="modal fade" id="confirmationModal{{ message['id'] }}" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel{{ message['id'] }}" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-dark text-white">
+                                                <h5 class="modal-title" id="confirmationModalLabel{{ message['id'] }}">Confirm Deletion</h5>
+                                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body text-left">
+                                                <p>Are you sure you want to delete the message from "{{ message['name'] }}"? This action cannot be undone.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                <form action="{{ url_for('admin.message', id=message['id']) }}" method="POST">
+                                                    <input type="hidden" name="_method" value="DELETE">
+                                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if messages['pagination']['pages'] > 1 %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if messages['pagination']['prev_num'] %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.messages', page=messages['pagination']['prev_num'], sort_by=messages['sort_by'], direction=messages['direction'], per_page=messages['pagination']['per_page']) }}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% for page_num in range(1, messages['pagination']['pages'] + 1) %}
+                                    <li class="page-item {% if page_num == messages.page %}active{% endif %}">
+                                        <a class="page-link {{ 'bg-secondary text-white' if messages['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.messages', page=page_num, sort_by=messages['sort_by'], direction=messages['direction'], per_page=messages['pagination']['per_page']) }}">{{ page_num }}</a>
+                                    </li>
+                                {% endfor %}
+                                {% if messages['pagination']['next_num'] %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.messages', page=messages['pagination']['next_num'], sort_by=messages['sort_by'], direction=messages['direction'], per_page=messages['pagination']['per_page']) }}" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                    <script>
+                        // Store the original table content
+                        const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                        
+                        // JavaScript function to perform asynchronous search
+                        async function search() {
+                            const query = document.getElementById("search-query").value;
+                    
+                            // Check if the query is empty
+                            if (query.trim() === "") {
+                                // Restore the original table content
+                                document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                                document.getElementById("results").innerHTML = ""; // Clear the results message
+                                return;
+                            }
+                    
+                            // Perform AJAX request to the search API
+                            const response = await fetch(`/api/search?q=${query}&t=message&direction={{messages['direction']}}&sort_by={{messages['sort_by']}}&per_page={{messages['pagination']['per_page']}}&page={{messages['pagination']['current_page']}}`);
+                            const data = await response.json();
+                    
+                            // Clear previous results in the results div
+                            const resultsDiv = document.getElementById("results");
+                            resultsDiv.innerHTML = ""; 
+                            
+                            
+                            // Clear existing table rows before appending new results
+                            const existingTableBody = document.querySelector("#search-table tbody");
+                            existingTableBody.innerHTML = ""; 
+                    
+                            if (data["data"].length === 0) {
+                                resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                            } else {
+                                resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                                
+                                // Append message results to the existing table
+                                data["data"].forEach((message) => {
+                                    const displayedMessage = message.message.length > 30 ? message.message.substring(0, 30) + '...' : message.message;
+        
+                                    const newRow = document.createElement("tr");
+                                    newRow.innerHTML = `
+                                        <td><a href="/admin/message/${message.id}">${message.id}</a></td>
+                                        <td>${message.name}</td>
+                                        <td>${message.email}</td>
+                                        <td>${message.phone}</td>
+                                        <td>${displayedMessage}</td>
+                                        <td>${message.date_created}</td>
+                                        <td>
+                                            <div class="row justify-content-center">
+                                                <a href="/admin/message/${message.id}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal${message.id}">
+                                                    <i class="fas fa-trash"></i>
+                                            </button>
+                                            </div>
+                                        </td>
+                                    `;
+                                    existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                                });
+                            }
+                        }
+                    
+                        // Debounce function to delay the search
+                        let timeout = null;
+                    
+                        function debounceSearch() {
+                            clearTimeout(timeout);
+                            timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                        }
+                    </script>
+                {% else %}
+                    No messages available
+                {% endif %}
+            </div>
+
+        {% endif %}
+    {% endblock %}

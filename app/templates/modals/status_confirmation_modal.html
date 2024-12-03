@@ -1,0 +1,27 @@
+<div class="modal fade" id="statusConfirmationModal{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="statusConfirmationModalLabel{{ modal_id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="statusConfirmationModalLabel{{ modal_id }}">{{message1}}</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-left text-dark">
+                <p>{{message2}}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('professional.service_request', id=service_request.id, service_status=status) }}" method="post">
+                    {% if status == "ASSIGNED" %}
+                    <button type="submit" class="btn btn-info">Take Request</button>
+                    {% elif status == "REJECTED" %}
+                    <button type="submit" class="btn btn-danger">Reject Request</button>
+                    {% elif status == "CLOSED" %}
+                    <button type="submit" class="btn btn-secondary">Finish Request</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

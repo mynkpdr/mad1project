@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% block title %}Category{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        {% if edit %}
+            <div class="container py-4 h-100">
+                <div class="row d-flex justify-content-center align-items-top h-100">
+                    <div class="col-lg-8 mb-4 mb-lg-0">
+                        <div class="card shadow">
+                            <div class="card-header text-center bg-primary text-white">
+                                <h3>Edit Category</h3>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ url_for('admin.category', id=category['id']) }}" method="POST" enctype="multipart/form-data">
+                                    <input type="hidden" name="_method" value="PUT">
+                                    {{ form.hidden_tag() }}
+                                    <!-- CSRF Token -->
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">
+                                            <i class="fas fa-tag"></i> {{ form.name.label.text }}
+                                        </label>
+                                        {{ form.name(class="form-control") }}
+                                    </div>
+                                    <div class="d-grid">
+                                        <a href="{{ request.referrer or url_for('admin.category', id=category['id']) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+                                        {{ form.submit(class="btn btn-primary btn-sm", value="Submit") }}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="container py-4 h-100">
+                <div class="row d-flex justify-content-center align-items-top h-100">
+                    <div class="col-lg-8 mb-4 mb-lg-0">
+                        <div class="card shadow">
+                            <div class="card-header text-center bg-primary text-white">
+                                <h3>Category Details</h3>
+                            </div>
+                            {% if category %}
+                                <div class="card-body">
+                                    <h4 class="card-title text-center">{{ category['name'] }}</h4>
+                                    <!-- Services Count -->
+                                    <p class="card-text">
+                                        <strong><i class="fas fa-wrench"></i> Services Count: </strong>{{ category['services_count'] }}
+                                    </p>
+                                    <!-- Date Created -->
+                                    <p class="card-text">
+                                        <strong><i class="fas fa-calendar-alt"></i> Created On: </strong> {{ category['date_created'] }}
+                                    </p>
+                                    <!-- Action Buttons -->
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+                                        <div>
+                                            <a href="{{ url_for('admin.category', id=category['id']) }}?edit=true" class="btn btn-primary btn-sm me-2"><i class="fas fa-edit"></i> Edit</a>
+                                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ category['id'] }}">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = category['id'] %}
+                                            {% set message = "Are you sure you want to delete the category " ~ category['name'] ~ "? This action cannot be undone." %}
+                                            {% set action = url_for('admin.category', id=category['id']) %}
+                                            {% include 'modals/confirmation_modal.html' %}  
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                Category not found
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "admin/base.html" %}
+{% block title %}Service Request{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+    {% if edit %}
+    <div class="container py-4 h-100">
+        <div class="row d-flex justify-content-center align-items-top h-100">
+            <div class="col-lg-8 mb-4 mb-lg-0">
+                <div class="card shadow">
+                    <div class="card-header text-center bg-primary text-white">
+                        <h3>Edit Service Request</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('admin.service_request', id=service_request['id']) }}">
+                            <input type="hidden" name="_method" value="PUT" />
+                            {{ form.hidden_tag() }} <!-- CSRF token -->
+                            <div class="form-group">
+                                {{ form.category_id.label(class="form-label") }}
+                                <select class="form-control" name="category_id" required>
+                                    <option value="{{ service_request['service']['category_id'] }}" name="category_id">{{ service_request['service']['category_name'] }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                {{ form.service_id.label(class="form-label") }}
+                                <select id="serviceSelect" class="form-control" name="service_id" required>
+                                    <option value="{{ service_request['service']['id'] }}" name="service_id">{{ service_request['service']['name'] }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                {{ form.customer_id.label(class="form-label") }}
+                                <select class="form-control" name="customer_id" required>
+                                    <option value="{{ service_request['customer']['id'] }}" name="customer_id" id="customer_id">{{ service_request['customer']['name'] }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                {{ form.professional_id.label(class="form-label") }}
+                                <select class="form-control" name="professional_id" required>
+                                    <option value="{{ service_request['professional']['id'] }}" name="professional_id" id="professional_id">{{ service_request['professional']['name'] }} (₹ {{service_request['professional']['service_price'] }} / hr)</option>
+                                </select>
+                                <input type="hidden" id="professional_service_price" name="professional_service_price" value="{{ service_request['professional']['service_price'] }}" />
+                            </div>
+                            <div class="form-group">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control") }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.total_days.label(class="form-label") }}
+                                {{ form.total_days(class="form-control", min=1) }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.hours_per_day.label(class="form-label") }}
+                                {{ form.hours_per_day(class="form-control", min=1, max=24) }}
+                            </div>
+                            <div class="form-group">
+                                {{ form.remarks.label(class="form-label") }}
+                                {{ form.remarks(class="form-control", rows=3, placeholder="Enter any remarks or special instructions...") }}
+                            </div>
+                            <div class="form-group">
+                                <label>Estimated Cost:</label>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <p id="estimated_cost_display" class="h5 text-primary mb-0">Rs. 0/-</p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="calculateCost()">
+                                        <i class="fas fa-calculator"></i> Calculate
+                                    </button>
+                                </div>
+                                <input type="hidden" name="cost" id="cost" value="0">
+                            </div>
+                            
+                            <a href="{{request.referrer or '/'}}" class="btn btn-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Save Service Request</button>
+                        </form>
+                    </div>                      
+                </div>
+            </div>
+        </div>
+    </div>
+                        <script>
+                            // Set today's date as the minimum date for the start date input
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const today = new Date().toISOString().split('T')[0];
+                                document.getElementById('start_date').setAttribute('min', today);
+    
+                                const selectedOption = document.getElementById('professional_id').selectedOptions[0];
+                                const servicePrice = selectedOption ? selectedOption.getAttribute('data-price') : 0;
+                                document.getElementById('professional_service_price').value = servicePrice;
+                            });
+    
+                            function updateServicePrice() {
+                                const selectedOption = document.getElementById('professional_id').selectedOptions[0];
+                                const servicePrice = selectedOption ? selectedOption.getAttribute('data-price') : 0;
+                                document.getElementById('professional_service_price').value = servicePrice;
+                            }
+    
+                            function calculateCost() {
+                                const servicePrice = parseInt(document.getElementById('professional_service_price').value);
+                                const totalDays = parseInt(document.getElementById('total_days').value) || 0;
+                                const hoursPerDay = parseInt(document.getElementById('hours_per_day').value) || 0;
+    
+                                const estimatedCost = servicePrice * totalDays * hoursPerDay;
+                                document.getElementById('estimated_cost_display').innerText = `Rs. ${estimatedCost}/-`;
+                                document.getElementById('cost').value = estimatedCost;
+                            }
+                        </script>
+    {% else %}
+        <div class="container py-4 h-100">
+            <div class="row d-flex justify-content-center align-items-top h-100">
+                <div class="col-lg-8">
+                    <div class="card border-light shadow-lg mb-4">
+                        <div class="card-header bg-dark text-white text-center">
+                            <h4 class="mb-0">Service Request Receipt</h4>
+                            <span class="badge text-white {{ 'bg-success' if service_request['service_status'] == 'REQUESTED' else 'bg-secondary' if service_request['service_status'] == 'CLOSED' else 'bg-info' if service_request['service_status'] == 'ASSIGNED' else 'bg-danger'  }}">{{ service_request['service_status'] }}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="text-muted text-center">Customer and Professional Details</h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="border rounded p-3 text-center">
+                                        <img src="{{ url_for('static', filename='uploads/profile/' ~ service_request['customer']['image']) }}" class="rounded-circle" alt="Customer Image" style="width: 100px; height: 100px; object-fit: cover">
+                                        <h5 class="mt-2">{{ service_request['customer']['name'] }}</h5>
+                                        <p>
+                                            <strong>Email:</strong> {{ service_request['customer']['email'] }}
+                                        </p>
+                                        <p>
+                                            <strong>Phone:</strong> {{ service_request['customer']['phone'] }}
+                                        </p>
+                                        <a class="btn btn-primary" href="{{ url_for('admin.customer', id =service_request['customer']['id']) }}">View</a>
+                                        </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="border rounded p-3 text-center">
+                                        <img src="{{ url_for('static', filename='uploads/profile/' ~ service_request['professional']['image']) }}" class="rounded-circle" alt="Professional Image" style="width: 100px; height: 100px; object-fit: cover">
+                                        <h5 class="mt-2">{{ service_request['professional']['name'] }}</h5>
+                                        <p>
+                                            <strong>Email:</strong> {{ service_request['professional']['email'] }}
+                                        </p>
+                                        <p>
+                                            <strong>Phone:</strong> {{ service_request['professional']['phone'] }}
+                                        </p>
+                                        <a class="btn btn-primary" href="{{ url_for('admin.professional', id =service_request['professional']['id']) }}">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <h5 class="text-muted text-center">Service Details</h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <img src="{{ url_for('static', filename='images/' ~ service_request['service']['image']) }}" alt="Service Image" class="img-fluid rounded" style="max-height: 150px; object-fit: cover">
+                                </div>
+                                <div class="col-md-8">
+                                    <h5>{{ service_request['service']['name'] }}</h5>
+                                    <p>
+                                        <strong>Price:</strong> &#8377; {{ service_request['professional']['service_price'] | indian_rupee_format }}
+                                    </p>
+                                    <p>
+                                        <strong>Description:</strong> {{ service_request['service']['description'] or 'N/A' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <h5 class="text-muted text-center">Request Summary</h5>
+                            <hr>
+                            <ul class="list-group mb-3">
+                                <li class="list-group-item">
+                                    <strong>Start Date:</strong> {{ service_request['start_date'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Total Days:</strong> {{ service_request['total_days'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Hours per Day:</strong> {{ service_request['hours_per_day'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Total Cost:</strong> &#8377; {{ service_request['total_cost'] | indian_rupee_format }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Date of Completion:</strong> {{ service_request['date_of_completion'] if service_request['date_of_completion'] else 'N/A' }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Remarks:</strong> {{ service_request['remarks'] or 'N/A' }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Date Created:</strong> {{ service_request['date_created'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Last Updated:</strong> {{ service_request['date_updated'] }}
+                                </li>
+                                {% if service_request['review'] %}
+                                <div class="card-header bg-warning text-dark mt-3">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-star"></i> Customer Review
+                                    </h5>
+                                </div>
+                                <li class="list-group-item py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong><i class="fas fa-user"></i> {{ service_request['customer']['name'] }}</strong>
+                                        <div class="col justify-content-between text-right">
+                                            <span class="badge bg-primary text-white">
+                                                {{ service_request['review']['value'] }} / 5 <i class="fas fa-star"></i>
+            
+                                            </span>
+                                            <button type="button" class="btn btn-danger btn-sm" style="font-size: 0.6em;;" data-toggle="modal" data-target="#confirmationModal{{ service_request['review']['id'] }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = service_request['review']['id'] %}
+                                            {% set message = "Are you sure you want to delete the review? This action cannot be undone." %}
+                                            {% set action = url_for('admin.review', id=modal_id) %}
+                                            {% include 'modals/confirmation_modal.html' %}
+                                            </div>
+                                    </div>
+                                    <p class="small text-muted">
+                                        <i class="fas fa-calendar-alt"></i> Reviewed on <strong>{{ service_request['review']['date_created'] }}</strong>
+                                    </p>
+                                    <p class="mt-2">{{ service_request['review']['description'] }}</p>
+                                </li>
+                                {% endif %}
+                            </ul>
+                            <div class="text-center">
+                                <div class="d-flex justify-content-center">
+                                    <a href="{{request.referrer or '/'}}" class="btn btn-secondary mx-2">Back</a>
+                                    <a href="{{ url_for('admin.service_request', id=service_request['id'], edit=true) }}" class="btn btn-info mx-2">Edit</a>
+                                    <button class="btn btn-danger mx-2" data-toggle="modal" data-target="#confirmationModal{{service_request['id']}}">Delete</button>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = service_request['id'] %}
+                                            {% set message = "Are you sure you want to delete the service request? This action cannot be undone." %}
+                                            {% set action = url_for('admin.service_request', id=modal_id) %}
+                                            {% include 'modals/confirmation_modal.html' %}
+                                    <button class="btn btn-primary mx-2" data-toggle="modal" data-target="#remarksModal">Add Remark</button>
+                                    {% if service_request['service_status'] == "CLOSED" %}
+                                    {% if service_request['review'] %}
+                                    {% else %}
+                                                                <button class="btn btn-primary mx-2" data-toggle="modal" data-target="#addReviewModal">Add Review</button>
+                                    {% endif %}
+                                    {% endif %}
+                                    <!-- Change Status Button -->
+                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#statusChangeModal">Change Status</button>
+                                    <!-- Modal for Changing Status -->
+                                    {% set action = url_for('admin.service_request', id=service_request['id']) %}
+                                    {% include 'modals/edit_service_status_modal.html' %} 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal for Adding Remark -->
+            {% set action = url_for('admin.service_request', id=service_request['id']) %}
+            {% include 'modals/add_remark_modal.html' %} 
+
+            {% if service_request['service_status'] == "CLOSED" %}
+                <!-- Modal for Adding Review -->
+                {% set professional_idx = service_request['professional']['id'] %}
+                {% set customer_idx = service_request['customer']['id'] %}
+                {% set service_request_idx = service_request['id'] %}
+                {% set action = url_for('admin.reviews') %}
+                {% include 'modals/add_review_modal.html' %} 
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

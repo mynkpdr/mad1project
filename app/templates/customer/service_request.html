@@ -1,0 +1,171 @@
+{% extends "customer/base.html" %}
+{% block title %}Service Request{% endblock %}
+{% block main %}
+<!-- Button to Open the Modal -->
+<div class="text-center mb-4">
+    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#addServiceRequestModal">
+        <i class="fas fa-plus-circle"></i> Make a Service Request for {{form.service_id.choices[0][1]}} from {{form.professional_id.choices[0][1]}}
+    </button>
+</div>
+
+<!-- Information Section About Services -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-info-circle"></i> About Our Services
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="card-text">
+            At **A to Z Household Services**, we strive to provide top-notch home services tailored to your needs. Whether it's plumbing, electrical work, cleaning, or home maintenance, our professionals are equipped with the skills and tools to get the job done efficiently.
+        </p>
+        <ul class="list-unstyled">
+            <li><i class="fas fa-check-circle text-success"></i> <strong>Certified Professionals:</strong> Our experts are fully vetted and experienced.</li>
+            <li><i class="fas fa-check-circle text-success"></i> <strong>Flexible Scheduling:</strong> Choose a time that works best for you.</li>
+            <li><i class="fas fa-check-circle text-success"></i> <strong>Transparent Pricing:</strong> No hidden fees, just clear and upfront pricing.</li>
+        </ul>
+        <p>
+            <strong>Ready to book your service?</strong> Click the button above to get started!
+        </p>
+    </div>
+</div>
+
+<!-- Services Available Section -->
+<div class="card shadow-sm mb-4 text-center">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="fas fa-tools"></i> Service Details
+        </h5>
+    </div>
+    <div class="card-body">
+        <!-- Service Image -->
+        <div class="mb-4">
+            <img src="{{ url_for('static', filename='images/' ~ service['image']) }}" alt="Service Image" class="img-fluid rounded" style="max-width: 20%; height: auto" />
+        </div>
+        <h4 class="card-title">{{ service['name'] }}</h4>
+        <!-- Service Price -->
+        <p class="card-text">
+            <strong><i class="fas fa-tag"></i> Price: </strong> ₹<span id="professional_service_price">NA</span>
+        </p>
+        <!-- Service Category -->
+        <p class="card-text">
+            <strong><i class="fas fa-folder"></i> Category: </strong>{{ service['category']['name'] }}
+        </p>
+        <!-- Description -->
+        <p class="card-text">
+            <strong><i class="fas fa-info-circle"></i> Description: </strong> {{ service['description'] or 'No description available' }}
+        </p>
+    </div>
+</div>
+
+<!-- Customer Testimonials Section -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-comments"></i> What Our Customers Say
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="testimonial">
+            <blockquote class="blockquote">
+                <p class="mb-0">"I had a plumbing issue, and the team was quick to respond and fix it. Highly recommend!"</p>
+                <footer class="blockquote-footer">John Doe, <cite title="Source Title">Satisfied Customer</cite></footer>
+            </blockquote>
+        </div>
+        <div class="testimonial mt-3">
+            <blockquote class="blockquote">
+                <p class="mb-0">"Great service and professional staff! Will use them again for my electrical work."</p>
+                <footer class="blockquote-footer">Jane Smith, <cite title="Source Title">Happy Client</cite></footer>
+            </blockquote>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Structure -->
+                    <div class="modal fade" id="addServiceRequestModal" tabindex="-1" role="dialog" aria-labelledby="addServiceRequestModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="addServiceRequestModalLabel">Add Service Request</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="">
+                                        {{ form.hidden_tag() }} <!-- CSRF token -->
+                                        <div class="form-group">
+                                            {{ form.category_id.label(class="form-label") }}
+                                            {{ form.category_id(class="form-control") }}
+                                            
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.service_id.label(class="form-label") }}
+                                            {{ form.service_id(class="form-control") }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.customer_id.label(class="form-label", style="display:none;") }}
+                                            {{ form.customer_id(class="form-control", style="display:none;") }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.professional_id.label(class="form-label") }}
+                                            {{ form.professional_id(class="form-control") }}
+                                            <input type="hidden" id="professional_service_price" name="professional_service_price" value="0" />
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.start_date.label(class="form-label") }}
+                                            {{ form.start_date(class="form-control") }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.total_days.label(class="form-label") }}
+                                            {{ form.total_days(class="form-control", min=1) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.hours_per_day.label(class="form-label") }}
+                                            {{ form.hours_per_day(class="form-control", min=1, max=24) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.remarks.label(class="form-label") }}
+                                            {{ form.remarks(class="form-control", rows=3, placeholder="Enter any remarks or special instructions...") }}
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Estimated Cost:</label>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <p id="estimated_cost_display" class="h5 text-primary mb-0">Rs. 0/-</p>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="calculateCost()">
+                                                    <i class="fas fa-calculator"></i> Calculate
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="cost" id="cost" value="0">
+                                        </div>
+                                        {{ form.submit(class="btn btn-primary") }}
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        // Set today's date as the minimum date for the start date input
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const today = new Date().toISOString().split('T')[0];
+                            document.getElementById('start_date').setAttribute('min', today);
+
+                            const selectedOption = document.getElementById('professional_id').selectedOptions[0];
+                            const servicePrice = selectedOption ? selectedOption.getAttribute('data-price') : 0;
+                            document.getElementById('professional_service_price').value = servicePrice;
+                            document.getElementById('professional_service_price').innerText = servicePrice;
+                        });
+
+                        function calculateCost() {
+                            const servicePrice = parseInt(document.getElementById('professional_service_price').value);
+                            const totalDays = parseInt(document.getElementById('total_days').value) || 0;
+                            const hoursPerDay = parseInt(document.getElementById('hours_per_day').value) || 0;
+
+                            const estimatedCost = servicePrice * totalDays * hoursPerDay;
+                            document.getElementById('estimated_cost_display').innerText = `Rs. ${estimatedCost}/-`;
+                            document.getElementById('cost').value = estimatedCost;
+                        }
+                    </script>
+{% endblock %}

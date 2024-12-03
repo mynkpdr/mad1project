@@ -1,0 +1,295 @@
+{% extends "customer/base.html" %}
+{% block title %}Customer Dashboard{% endblock %}
+{% block main %}
+  <!-- Dashboard Content -->
+  <div class="container mt-4">
+    <h2 class="mb-4">Welcome, {{data['name']}}</h2>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Account Summary Section -->
+    <div class="card">
+      <div class="card-header bg-info text-white">Account Summary</div>
+      <div class="card-body">
+        <div class="container-fluid align-items-center">
+          <div class="row justify-content-center">
+              <!-- Service Requests Chart -->
+              <div class="col-lg-4 col-md-6 mb-4">
+                  <div class="card" style="height: 100%;">
+                      <div class="card-body p-0" style="height: 100%;">
+                          <canvas id="serviceRequestsChart" style="width: 100%; height: 100%;"></canvas>
+                      </div>
+                  </div>
+              </div>
+              <!-- Spending Data Chart -->
+              <div class="col-lg-4 col-md-6 mb-4">
+                  <div class="card" style="height: 100%;">
+                      <div class="card-body p-0" style="height: 100%;">
+                          <canvas id="spendingChart" style="width: 100%; height: 250px;"></canvas>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      
+                    <script>
+                      // Service Requests Chart (Requested, Assigned, and Closed)
+const ctxServiceRequests = document.getElementById('serviceRequestsChart').getContext('2d');
+const serviceRequestsChart = new Chart(ctxServiceRequests, {
+    type: 'bar',
+    data: {
+        labels: ['Requested', 'Assigned', 'Closed', 'Rejected'],
+        datasets: [{
+            label: 'Service Requests',
+            data: ['{{ requested_service_requests_count }}', '{{ assigned_service_requests_count }}', '{{ closed_service_requests_count }}', '{{ rejected_service_requests_count }}'],
+            backgroundColor: ['#28a745', '#17a2b8', '#6c757d', '#dc3545'],
+            hoverBackgroundColor: ['#1c7430', '#138496', '#5a636a', '#8B0000'],
+            borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+            borderWidth: 1,
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    // Ensure ticks are whole numbers
+                    callback: function(value) {
+                        return Number.isInteger(value) ? value : ''; // Only show integers
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: 'Service Requests Overview',
+                font: {
+                    size: 18,
+                    weight: 'bold'
+                },
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(tooltipItem) {
+                        return tooltipItem.label + ": " + tooltipItem.raw;
+                    }
+                }
+            }
+        }
+    }
+})
+
+        </script>
+        <script>
+          var spendingData = JSON.parse('{{ spending_data | tojson | safe }}');
+
+          // Extract the days and total spending for the chart
+          var labels = spendingData.map(item => new Date(item.day).toLocaleDateString()); // Extract days
+          var data = spendingData.map(item => item.total_spent); // Extract total spent
+
+                  // Create the chart
+          var ctx = document.getElementById('spendingChart').getContext('2d');
+          var spendingChart = new Chart(ctx, {
+              type: 'line',  // or 'bar' for bar chart
+              data: {
+                  labels: labels,  // X-axis labels (Days)
+                  datasets: [{
+                      label: 'Total Amount Spent (₹)',
+                      data: data,  // Y-axis data (Total spent per month)
+                      borderWidth: 2,
+                      borderColor: 'rgba(0, 123, 255, 1)', // Line color
+                      backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                  }]
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  title: {
+                      display: true,
+                      text: 'Expenditure Overview',
+                      font: {
+                          size: 18,
+                          weight: 'bold'
+                      },
+                  },
+                  tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            // Format the tooltip value using Indian number format
+                            return ' ₹ ' + indianNumberFormat(tooltipItem.raw);
+                        }
+                    }
+                }
+              },
+                  scales: {
+                      x: {
+                          title: {
+                              display: true,
+                              text: 'Date'
+                          }
+                      },
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹ ' + indianNumberFormat(value); // Apply Indian format to y-axis labels
+                            }
+                        },
+                          title: {
+                              display: true,
+                              text: 'Amount Spent (₹)'
+                          },
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+        </script>
+        <!-- Stats Row -->
+        <div class="row justify-content-center">
+
+          <div class="col-md-4">
+              <div class="card text-white mb-4" style="background-color: #007bff ;">
+                  <div class="card-body">Total Service Requests</div>
+                  <div class="card-footer d-flex align-items-center justify-content-between">
+                      <span>{{data['closed_service_requests_count'] + data['requested_service_requests_count'] + data['assigned_service_requests_count'] + data['rejected_service_requests_count']}}</span>
+                      <i class="fas fa-envelope"></i>
+                  </div>
+              </div>
+          </div>
+          <div class="col-md-4">
+              <div class="card text-white mb-4" style="background-color: #20a681;"> <!-- Mixture of Requested and Assigned color -->
+                  <div class="card-body">Current Service Requests</div>
+                  <div class="card-footer d-flex align-items-center justify-content-between">
+                      <span>{{data['current_service_requests_count']}}</span>
+                      <i class="fas fa-envelope"></i>
+                  </div>
+              </div>
+          </div>
+          <div class="col-md-4">
+              <div class="card text-white mb-4" style="background-color: #6c757d;">
+                  <div class="card-body">Closed Service Requests</div>
+                  <div class="card-footer d-flex align-items-center justify-content-between">
+                      <span>{{data['closed_service_requests_count']}}</span>
+                      <i class="fas fa-envelope"></i>
+                  </div>
+              </div>
+          </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Current Service Requests Section -->
+    <div class="card">
+      <div class="card-header bg-primary text-white">Current Service Requests</div>
+      <div class="card-body">
+        <div class="list-group" style="font-size: 14px;">
+            {% if service_requests %}
+            {% for service_request in service_requests %}
+            {% if service_request['service_status'] == "REQUESTED" or service_request['service_status'] == "ASSIGNED" %}
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                  <div class="col-md-4">
+                    <strong>Service:</strong> {{service_request['service']['name']}}
+                  </div>
+                  <div class="col-md-3">
+                    <strong>Start Date:</strong> {{service_request['start_date']}}
+                  </div>
+                  <div class="col-md-3">
+                    <strong>Last Updated:</strong> {{service_request['date_updated']}}
+                  </div>
+                  <div class="col-md-1">
+                    <span class="badge text-white {{ 'bg-success' if service_request['service_status'] == 'REQUESTED' else 'bg-secondary' if service_request['service_status'] == 'CLOSED' else 'bg-info' if service_request['service_status'] == 'ASSIGNED' else 'bg-danger' if service_request['service_status'] == 'REJECTED'}}">{{service_request['service_status']}}</span>
+                  </div>
+                  <div class="col-md-1 text-right">
+                    <a href="{{url_for('customer.service_request_view', id=service_request['id'])}}" class="btn btn-outline-secondary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                  </div>
+
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">No Service Requests</p>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Past Services Section -->
+    <div class="card">
+      <div class="card-header bg-secondary text-white">Past Service Requests</div>
+      <div class="card-body">
+        <div class="list-group" style="font-size: 14px;">
+            {% if service_requests %}
+            {% for service_request in service_requests %}
+            {% if service_request['service_status'] == "CLOSED" %}
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                  <div class="col-md-4">
+                    <strong>Service:</strong> {{service_request['service']['name']}}
+                  </div>
+                  <div class="col-md-3">
+                    <strong>Start Date:</strong> {{service_request['start_date']}}
+                  </div>
+                  <div class="col-md-3">
+                    <strong>End Date:</strong> {{service_request['date_of_completion']}}
+                  </div>
+                  <div class="col-md-1">
+                    <span class="badge text-white bg-secondary">CLOSED</span>
+                  </div>
+                  <div class="col-md-1 text-right">
+                    <a href="{{url_for('customer.service_request_view', id=service_request['id'])}}" class="btn btn-outline-secondary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">No Service Requests</p>
+            {% endif %}
+              
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejected Services Section -->
+    <div class="card">
+      <div class="card-header bg-danger text-white">Rejected Service Requests</div>
+      <div class="card-body">
+        <div class="list-group" style="font-size: 14px;">
+            {% if service_requests %}
+            {% for service_request in service_requests %}
+            {% if service_request['service_status'] == "REJECTED" %}
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                  <div class="col-md-4">
+                    <strong>Service:</strong> {{service_request['service']['name']}}
+                  </div>
+                  <div class="col-md-3">
+                    <strong>Start Date:</strong> {{service_request['start_date']}}
+                  </div>
+                  <div class="col-md-3">
+                    <strong>Updated Date:</strong> {{service_request['date_updated']}}
+                  </div>
+                  <div class="col-md-1">
+                    <span class="badge text-white bg-danger">REJECTED</span>
+                  </div>
+                  <div class="col-md-1 text-right">
+                    <a href="{{url_for('customer.service_request_view', id=service_request['id'])}}" class="btn btn-outline-secondary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">No Service Requests</p>
+            {% endif %}             
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

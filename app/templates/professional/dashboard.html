@@ -1,0 +1,658 @@
+{% extends "professional/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "PROFESSIONAL" %}
+            <h1 class="mb-4">Professional Dashboard</h1>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <div class="container">
+                <div class="row">
+                    <!-- Revenue Chart -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card" style="height: 100%;">
+                            <div class="card-body p-0" style="height: 100%;">
+                                <canvas id="revenueChart" style="width: 100%; height: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Service Requests Chart -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card" style="height: 100%;">
+                            <div class="card-body" style="height: 100%;">
+                                <canvas id="serviceRequestsChart" style="width: 100%; height: 100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Reviews Pie Chart -->
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card" style="height: 100%;">
+                            <div class="card-body p-0" style="height: 100%;">
+                                <canvas id="reviewsPieChart" style="width: 100%; height: 300px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+                // Service Requests Chart (Requested, Assigned, and Closed)
+                const ctxServiceRequests = document.getElementById("serviceRequestsChart").getContext("2d");
+                const serviceRequestsChart = new Chart(ctxServiceRequests, {
+                    type: "bar",
+                    data: {
+                        labels: ["Requested", "Assigned", "Closed", "Rejected"],
+                        datasets: [
+                            {
+                                label: "Service Requests",
+                                data: ["{{ requested_service_requests_count }}", "{{ assigned_service_requests_count }}", "{{ closed_service_requests_count }}", "{{ rejected_service_requests_count }}"],
+                                backgroundColor: ["#28a745", "#17a2b8", "#6c757d", "#dc3545"],
+                                hoverBackgroundColor: ["#1c7430", "#138496", "#5a636a", "#8B0000"],
+                                borderColor: ["#ffffff", "#ffffff", "#ffffff", "#ffffff"],
+                                borderWidth: 1,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    // Ensure ticks are whole numbers
+                                    callback: function (value) {
+                                        return Number.isInteger(value) ? value : ""; // Only show integers
+                                    },
+                                },
+                            },
+                        },
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            title: {
+                                display: true,
+                                text: "Service Requests Overview",
+                                font: {
+                                    size: 18,
+                                    weight: "bold",
+                                },
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (tooltipItem) {
+                                        return tooltipItem.label + ": " + tooltipItem.raw;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            </script>
+
+<script>
+    // Fetch and process the data from Flask template
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const revenueData = JSON.parse('{{ revenue_data|tojson|safe }}');
+
+    // Extract labels (formatted date) and data points (total revenue)
+    const labels = revenueData.map(dataPoint => new Date(dataPoint.day).toLocaleDateString()); // Format date
+    const dataPoints = revenueData.map(dataPoint => dataPoint.total_revenue);
+
+    // Create the Chart.js chart
+    const revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Monthly Revenue (₹)',
+                data: dataPoints,
+                borderColor: 'rgba(0, 123, 255, 1)', // Line color
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Revenue last month',
+                    font: {
+                        size: 18,
+                        weight: 'bold'
+                    },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            // Format the tooltip value using Indian number format
+                            return ' ₹ ' + indianNumberFormat(tooltipItem.raw);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹ ' + indianNumberFormat(value); // Apply Indian format to y-axis labels
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)',
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date',
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
+            <script>
+                const ctx2 = document.getElementById('reviewsPieChart').getContext('2d');
+                const reviewData = JSON.parse('{{ review_counts|tojson|safe }}');
+                const averageReview = '{{average_review}}';
+
+                new Chart(ctx2, {
+                    type: 'doughnut', // Change to 'doughnut' to create a donut chart
+                    data: {
+                        labels: Object.keys(reviewData),
+                        datasets: [{
+                            data: Object.values(reviewData),
+                            backgroundColor: ['#6c757d', '#99a51f', '#b0bf05', '#c6d000', '#ffc107']
+
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, // Allows custom sizing
+                        plugins: {
+                            title: {
+                                    display: true,
+                                    text: 'Reviews Analysis',
+                                    font: {
+                                        size: 18,
+                                        weight: 'bold'
+                                    },
+                                },
+                                tooltip: {
+                                            callbacks: {
+                                                label: function (tooltipItem) {
+                                                    return 'Reviews' + ": " + tooltipItem.raw;
+                                                },
+                                            },
+                                        },
+                        }
+                    },
+                    plugins: [{
+                        id: 'centerText',
+                        beforeDraw: (chart) => {
+                            const { chartArea, width, height } = chart;
+                            const ctx2 = chart.ctx;
+                            ctx2.restore();
+
+                            // Use chartArea to get the dimensions of the chart's drawing area
+                            const chartWidth = chartArea.right - chartArea.left;
+                            const chartHeight = chartArea.bottom - chartArea.top;
+
+                            // Set font properties for better alignment
+                            const fontSize = Math.min(chartWidth, chartHeight) / 7;
+                            ctx2.font = `bold ${fontSize}px sans-serif`;
+                            ctx2.textAlign = 'center';
+                            ctx2.textBaseline = 'middle';
+                            ctx2.fillStyle = '#000';
+
+                            // Draw the text in the center of the chart area
+                            const text = `${averageReview} ★`;
+                            const textX = chartArea.left + chartWidth / 2;
+                            const textY = chartArea.top + chartHeight / 2; // Adjust Y position based on text size
+
+                            ctx2.fillText(text, textX, textY);
+                            ctx2.save();
+                        }
+
+                    }]
+                });
+            </script>
+
+            <!-- Stats Row -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-white mb-4" style="background-color: #20c997 ;">
+                        <div class="card-body">Revenue</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <span>₹ {{ total_earnings| indian_rupee_format }} /-</span>
+                            <i class="fas fa-money-bill"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white mb-4" style="background-color: #20a681;">
+                        <div class="card-body">Active Service Requests</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <span>{{ current_service_requests_count }}</span>
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white mb-4" style="background-color: #6c757d;">
+                        <div class="card-body">Closed Service Requests</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <span>{{ closed_service_requests_count }}</span>
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white mb-4">
+                        <div class="card-body">Total Reviews</div>
+                        <div class="card-footer d-flex align-items-center justify-content-between">
+                            <span>{{total_reviews}}</span>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Data Table -->
+             {% if service_requests %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <i class="fas fa-tools"></i> Recent Service Requests
+                        </div>
+                        <form method="GET" action="{{ url_for('professional.dashboard') }}#results" class="d-inline mr-3">
+                            <!-- Button for REQUESTED status -->
+                            <button type="submit" name="status" value="{% if request.args.get('status') == 'REQUESTED' %}""{% else %}REQUESTED{% endif %}" class="btn {{'btn-success' if request.args.get('status') == 'REQUESTED' else 'btn-dark'}}">
+                                REQUESTED
+                            </button>
+                            
+                            <!-- Button for ASSIGNED status -->
+                            <button type="submit" name="status" value="{% if request.args.get('status') == 'ASSIGNED' %}""{% else %}ASSIGNED{% endif %}" class="btn {{'btn-info' if request.args.get('status') == 'ASSIGNED' else 'btn-dark'}}">
+                                ASSIGNED
+                            </button>
+                            
+                            <!-- Button for CLOSED status -->
+                            <button type="submit" name="status" value="{% if request.args.get('status') == 'CLOSED' %}""{% else %}CLOSED{% endif %}" class="btn {{'btn-secondary' if request.args.get('status') == 'CLOSED' else 'btn-dark'}}">
+                                CLOSED
+                            </button>
+                            
+                            <!-- Button for REJECTED status -->
+                            <button type="submit" name="status" value="{% if request.args.get('status') == 'REJECTED' %}""{% else %}REJECTED{% endif %}" class="btn {{'btn-danger' if request.args.get('status') == 'REJECTED' else 'btn-dark'}}">
+                                REJECTED
+                            </button>
+                        
+                            
+                            {% for key, value in request.args.items() %}
+                                {% if key != 'status' and key !='page' %}  <!-- Exclude 'status' and 'page' to avoid overwriting -->
+                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                {% endif %}
+                            {% endfor %}
+                        </form>
+                        <div class="col-auto ml-auto">
+                            <form method="GET" class="d-inline mr-3">
+                                <label for="per-page" class="mr-2">Per page:</label>
+                                <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                                    <option value="5" {% if service_requests['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                                    <option value="10" {% if service_requests['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                                    <option value="20" {% if service_requests['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                                    <option value="50" {% if service_requests['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                                </select>
+                                {% for key, value in request.args.items() %}
+                                {% if key != 'per_page' %}  <!-- Exclude per_page to avoid duplicates -->
+                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                {% endif %}
+                            {% endfor %}
+                            </form>
+                            <form class="d-inline-flex" method="GET">
+                                <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control mr-2" placeholder="Search for Service Requests..." aria-label="Search" />
+                                <button class="btn btn-light" disabled>
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table id="search-table" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='id', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'id' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='id', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'id' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+                                    ID
+                                    {% if service_requests['sort_by'] == 'id' %}
+                                        {% if service_requests['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                                
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='customer_name', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'customer_name' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='customer_name', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'customer_name' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+                                    Customer
+                                    {% if service_requests['sort_by'] == 'customer_name' %}
+                                        {% if service_requests['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                                
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='total_days', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'total_days' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='total_days', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'total_days' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+    
+                                        Total Days
+                                        {% if service_requests['sort_by'] == 'total_days' %}
+                                            {% if service_requests['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='hours_per_day', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'hours_per_day' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='hours_per_day', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'hours_per_day' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+    
+                                        Hours Per Day
+                                        {% if service_requests['sort_by'] == 'hours_per_day' %}
+                                            {% if service_requests['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='total_cost', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'total_cost' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='total_cost', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'total_cost' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+    
+                                        Total Cost
+                                        {% if service_requests['sort_by'] == 'total_cost' %}
+                                            {% if service_requests['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='date_created', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'date_created' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='date_created', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'date_created' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+                                    Date Created
+                                    {% if service_requests['sort_by'] == 'date_created' %}
+                                        {% if service_requests['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                                
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='start_date', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'start_date' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='start_date', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'start_date' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+                                    Start Date
+                                    {% if service_requests['sort_by'] == 'start_date' %}
+                                        {% if service_requests['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                                </th>
+                                <th>
+                                    {% if service_requests['status'] %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='service_status', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'service_status' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page'], 
+                                                        status=service_requests['status']) }}#results">
+                                {% else %}
+                                    <a href="{{ url_for('professional.dashboard', 
+                                                        sort_by='service_status', 
+                                                        direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'service_status' else 'desc', 
+                                                        per_page=service_requests['pagination']['per_page']) }}#results">
+                                {% endif %}
+                                    Status
+                                    {% if service_requests['sort_by'] == 'service_status' %}
+                                        {% if service_requests['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <div id="results"></div>
+                            {% for service_request in service_requests['data'] %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('professional.service_request', id=service_request['id']) }}">{{ service_request['id'] }}</a>
+                                    </td>
+                                    <td>{{ service_request['customer']['name'] }}</td>
+                                    <td>{{ service_request['total_days'] }}</td>
+                                    <td>{{ service_request['hours_per_day'] }}</td>
+                                    <td>₹ {{ service_request['total_cost'] | indian_rupee_format }}</td>
+                                    <td>{{ service_request['date_created'] }}</td>
+                                    <td>{{ service_request['start_date'] }}</td>
+                                    <td class="text-white text-center {{ 'bg-success' if service_request['service_status'] == 'REQUESTED' else 'bg-secondary' if service_request['service_status'] == 'CLOSED' else 'bg-info' if service_request['service_status'] == 'ASSIGNED' else 'bg-danger'}}">{{ service_request['service_status'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if service_requests['pagination']['pages'] > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if service_requests['pagination']['prev_num'] %}
+                                <li class="page-item">
+                                    {% if service_requests['status'] %}
+                                    <a class="page-link" href="{{ url_for('professional.dashboard', page=service_requests['pagination']['prev_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page'], status=service_requests['status']) }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('professional.dashboard', page=service_requests['pagination']['prev_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page']) }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                    {% endif %}
+                                        
+                                </li>
+                            {% endif %}
+                            {% for page_num in range(1, service_requests['pagination']['pages'] + 1) %}
+                                <li class="page-item {% if page_num == service_requests.page %}active{% endif %}">
+                                    {% if service_requests['status'] %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if service_requests['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('professional.dashboard', page=page_num, sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page'], status=service_requests['status']) }}">{{ page_num }}</a>
+                                    {% else %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if service_requests['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('professional.dashboard', page=page_num, sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page']) }}">{{ page_num }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                            {% if service_requests['pagination']['next_num'] %}
+                                <li class="page-item">
+                                    {% if service_requests['status'] %}
+                                    <a class="page-link" href="{{ url_for('professional.dashboard', page=service_requests['pagination']['next_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page'], status=service_requests['status']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('professional.dashboard', page=service_requests['pagination']['next_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                    <script>
+                        // Store the original table content
+                        const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                        
+                        // JavaScript function to perform asynchronous search
+                        async function search() {
+                            const query = document.getElementById("search-query").value;
+                    
+                            // Check if the query is empty
+                            if (query.trim() === "") {
+                                // Restore the original table content
+                                document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                                document.getElementById("results").innerHTML = ""; // Clear the results message
+                                return;
+                            }
+                    
+                            // Perform AJAX request to the search API
+                            const response = await fetch(`/api/search?q=${query}&t=service_request&direction={{service_requests['direction']}}&sort_by={{service_requests['sort_by']}}&per_page={{service_requests['pagination']['per_page']}}&page={{service_requests['pagination']['current_page']}}&status={{service_requests['status']}}`);
+                            const data = await response.json();
+                    
+                            // Clear previous results in the results div
+                            const resultsDiv = document.getElementById("results");
+                            resultsDiv.innerHTML = ""; 
+                            
+                            
+                            // Clear existing table rows before appending new results
+                            const existingTableBody = document.querySelector("#search-table tbody");
+                            existingTableBody.innerHTML = ""; 
+                    
+                            if (data["data"].length === 0) {
+                                resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                            } else {
+                                resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                                
+                                // Append service_request results to the existing table
+                                data["data"].forEach((service_request) => {
+                                    let statusClass = '';
+                                    switch (service_request.status) {
+                                        case 'Requested':
+                                            statusClass = 'bg-success';
+                                            break;
+                                        case 'Assigned':
+                                            statusClass = 'bg-info';
+                                            break;
+                                        case 'Closed':
+                                            statusClass = 'bg-secondary';
+                                            break;
+                                        case 'Rejected':
+                                            statusClass = 'bg-danger';
+                                            break;
+                                        default:
+                                            statusClass = ''; // Default class if needed
+                                    }
+            
+                                    const newRow = document.createElement("tr");
+                                    newRow.innerHTML = `
+                                        <td><a href="/professional/service_request/${service_request.id}">${service_request.id}</a></td>
+                                        <td>${service_request.customer}</td>
+                                        <td>${service_request.total_days}</td>
+                                        <td>${service_request.hours_per_day}</td>
+                                        <td>₹${service_request.total_cost.toLocaleString('en-IN')}</td>
+                                        <td>${service_request.date_created}</td>
+                                        <td>${service_request.start_date}</td>
+                                        <td class="${statusClass} text-white text-center">${service_request.status.charAt(0).toUpperCase() + service_request.status.slice(1)}</td>
+                                    `;
+                                    existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                                });
+                            }
+                        }
+                    
+                        // Debounce function to delay the search
+                        let timeout = null;
+                    
+                        function debounceSearch() {
+                            clearTimeout(timeout);
+                            timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                        }
+                    </script>
+                </div>
+            </div>
+            {% endif %}
+    {% endif %}
+{% endblock %}

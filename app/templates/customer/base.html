@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+        <div class="container mt-4">
+            {% with messages = get_flashed_messages(with_categories=True) %}
+                {% if messages %}
+                    <div class="alert-container" style="position: relative;">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" style="opacity: 1; transition: opacity 1s ease-in-out; position: relative; z-index: 100;" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <script>
+                        // Use a timeout to automatically hide alerts after 5 seconds
+                        setTimeout(function() {
+                            const alerts = document.querySelectorAll('.alert-container .alert');
+                            alerts.forEach(alert => {
+                                alert.style.opacity = '0'; // Start fading out
+
+                                // Wait for the fade transition to end before removing the alert
+                                setTimeout(() => {
+                                    alert.remove(); // Remove the alert from the DOM
+                                }, 500); // 0.5 seconds for fade-out duration
+                            });
+                        }, 5000); // 5 seconds
+                    </script>
+                {% endif %}
+            {% endwith %}
+        {% block main %} {% endblock %}
+        </div>
+{% endblock %}

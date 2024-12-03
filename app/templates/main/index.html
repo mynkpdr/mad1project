@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+    <header class="bg-dark py-5" style="background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('/static/images/home_cover.jpeg'); background-size: cover; background-position: center; background-repeat: no-repeat; color: white; /* Ensures text is visible over the darkened background */ display: flex; /* Center text vertically */ flex-direction: column; /* Stack children vertically */ justify-content: center; /* Center children vertically */ text-align: center; /* Center text horizontally */">
+        <div class="container my-5">
+            <div class="row gx-5 align-items-start">
+                <div class="col-lg-8 col-xl-5 col-xxl-6">
+                    <div class="col" style="text-align: left;">
+                        <h1 class="display-5 fw-bolder text-white mb-2">HouseHold Services</h1>
+                        <p class="lead fw-normal text-light mb-4">Find trusted professionals for home services like plumbing, cleaning, and more. Book, manage requests, and read reviews all in one place for a seamless experience.</p>
+                        <form class="d-flex justify-content-start position-relative" method="GET">
+                            <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control me-2" placeholder="Search for Services..." aria-label="Search" autocomplete="off" />
+                            <button class="btn btn-light">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                        <div id="results-container" class="position-relative">
+                            <div id="results" class="dropdown-menu w-100" style="display: none;"></div>
+                        </div>
+                        <script>
+                            // JavaScript function to perform asynchronous search
+                            async function search() {
+                                const query = document.getElementById("search-query").value;
+
+                                if (query.trim() === "") {
+                                    document.getElementById("results").innerHTML = "<p class='dropdown-item'>Please enter a search term</p>";
+                                    document.getElementById("results").style.display = 'block';
+                                    return;
+                                }
+
+                                // Perform AJAX request to the search API
+                                const response = await fetch(`api/search?q=${query}&t=service`);
+                                const data = await response.json();
+
+                                // Display the results in the results div
+                                const resultsDiv = document.getElementById("results");
+                                resultsDiv.innerHTML = ""; // Clear previous results
+                                resultsDiv.style.display = 'block'; // Show dropdown
+
+                                if (data['data'].length === 0) {
+                                    resultsDiv.innerHTML = `<p class="dropdown-item text-muted">No results found for "${query}"</p>`;
+                                } else {
+                                    // Display results as dropdown items
+                                    let serviceListHTML = ``;
+
+                                    data['data'].forEach(service => {
+                                        serviceListHTML += `
+                                        <a href="service/${service.id}" class="dropdown-item">
+                                            ${service.name}
+                                        </a>`;
+                                    });
+
+                                    resultsDiv.innerHTML = serviceListHTML;
+                                }
+                            }
+
+                            // Debounce function to delay the search
+                            let timeout = null;
+
+                            function debounceSearch() {
+                                clearTimeout(timeout);
+                                timeout = setTimeout(search, 100); // Delay of 100ms before triggering search
+                            }
+
+                            // Hide dropdown if clicked outside
+                            document.addEventListener('click', function(event) {
+                                const searchBox = document.getElementById("search-query");
+                                const resultsDiv = document.getElementById("results");
+
+                                if (!searchBox.contains(event.target) && !resultsDiv.contains(event.target)) {
+                                    resultsDiv.style.display = 'none';
+                                }
+                            });
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-auto mx-5">
+                <img class="img-fluid rounded-3 my-5" src="/static/images/plumber.png" alt="Household services image" width="60" height="40" />
+            </div>
+            <div class="col-sm-auto mx-5">
+                <img class="img-fluid rounded-3 my-5" src="/static/images/electrician.png" alt="Household services image" width="60" height="40" />
+            </div>
+            <div class="col-sm-auto mx-5">
+                <img class="img-fluid rounded-3 my-5" src="/static/images/carpenter.png" alt="Household services image" width="60" height="40" />
+            </div>
+            <div class="col-sm-auto mx-5">
+                <img class="img-fluid rounded-3 my-5" src="/static/images/housekeeper.png" alt="Household services image" width="60" height="40" />
+            </div>
+            <div class="col-sm-auto mx-5">
+                <img class="img-fluid rounded-3 my-5" src="/static/images/home_security.png" alt="Household services image" width="60" height="40" />
+            </div>
+        </div>
+    </div>
+    <!-- Hero Section -->
+    <div class="container-fluid bg-light py-5 text-center">
+        <h1 class="display-4">Welcome to A to Z Household Services</h1>
+        <p class="lead">Connecting professionals and customers for all your household needs.</p>
+        
+    </div>
+    <style>
+        .counter-number {
+            padding: 20px;
+            background-color: #f8f9fa;
+            /* Light background for better contrast */
+            border-radius: 10px;
+            /* Rounded corners */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            /* Subtle shadow effect */
+        }
+
+        .animated-digit {
+            font-weight: bold;
+            color: #007bff;
+            /* Bootstrap success color */
+        }
+
+        .counter-number p {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            /* Slightly larger font for labels */
+            color: #6c757d;
+            /* Text color */
+        }
+    </style>
+    <div class="container counter-container" id="counterSection">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="counter-number">
+                    <div class="animated-digit display-4" data-target="{{ 23350 }}">0</div>
+                    <p>Service Requests</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="counter-number">
+                    <div class="animated-digit display-4" data-target="13927">0</div>
+                    <p>Customers</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="counter-number">
+                    <div class="animated-digit display-4" data-target="162">0</div>
+                    <p>Professionals</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const counters = document.querySelectorAll('.animated-digit');
+
+            const updateCount = (counter) => {
+                const target = +counter.getAttribute('data-target'); // Get target number
+                const count = +counter.innerText; // Get current number
+
+                // Calculate increment
+                const increment = target / 500; // Change this value to adjust speed
+
+                // Check if current count is less than target
+                if (count < target) {
+                    // Update current count
+                    counter.innerText = Math.ceil(count + increment);
+                    setTimeout(() => updateCount(counter), 1); // Call updateCount again
+                } else {
+                    counter.innerText = target; // Ensure it ends at the target
+                }
+            };
+
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Start counting when the counter section comes into view
+                        counters.forEach(counter => updateCount(counter));
+                        // Stop observing after the animation starts
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+
+            // Observe the counter section
+            observer.observe(document.getElementById('counterSection'));
+        });
+    </script>
+        <style>
+            .custom-card {
+              margin-top: 30px;
+              border-radius: 15px;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+            .custom-card-header {
+              background-color: #007bff;
+              color: white;
+              border-top-left-radius: 15px;
+              border-top-right-radius: 15px;
+              padding: 15px;
+            }
+            .custom-card-body {
+              padding: 25px;
+            }
+          </style>
+          {% if current_user.is_authenticated %}
+          {% else %}
+        <div class="container">
+            <div class="card custom-card">
+              <div class="custom-card-header text-center">
+                <h2>Your One-Stop Solution for Appliance Repair & Maintenance</h2>
+              </div>
+              <div class="custom-card-body">
+                <p class="lead">We understand how crucial your home and office appliances are to your everyday life. From washing machines and refrigerators to air conditioners and even specialized equipment like drones and medical devices, our expert technicians are here to keep everything running smoothly. With years of experience, high-quality spare parts, and a commitment to top-notch service, we’re your trusted partner for all your repair and maintenance needs.</p>
+                
+                <h4>Why Choose Us?</h4>
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item"><strong>Certified Specialists:</strong> Our team is made up of highly skilled technicians trained to handle a wide range of appliances and devices. We go beyond basic repairs—our technicians are experts in their fields.</li>
+                  <li class="list-group-item"><strong>Authentic Spare Parts:</strong> We only use genuine parts to ensure the durability and efficiency of your appliances. All our parts come with a 6-month warranty for your peace of mind.</li>
+                  <li class="list-group-item"><strong>Affordable Pricing:</strong> Quality service shouldn't come with a hefty price tag. We offer competitive pricing without compromising on the quality of our work.</li>
+                  <li class="list-group-item"><strong>Simple Service Requests:</strong> Submit your service request through our user-friendly online platform and track the status of your repair in real-time. Getting your appliance fixed is just a click away!</li>
+                </ul>
+                
+                <div class="text-center mt-4">
+                  <a href="{{url_for('auth.signup')}}" class="btn custom-button btn-lg bg-primary text-white">Ready to Get Started?</a>
+                </div>
+              </div>
+            </div>
+          </div>
+    <!-- Services Overview -->
+    <div class="container my-4">
+        <div class="row">
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename='images/customer.png') }}" alt="Customer" class="img-fluid mb-3" style="max-width: 300px" />
+                <h3>Customer</h3>
+                <p>Find and book household services easily.</p>
+                <a href="{{ url_for('auth.signup', user='customer') }}" class="btn btn-outline-primary">Register</a>
+            </div>
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename='images/professional.png') }}" alt="Professional" class="img-fluid mb-3" style="max-width: 300px" />
+                <h3>Service Professional</h3>
+                <p>Sign up to offer your services and reach customers.</p>
+                <a href="{{ url_for('auth.signup', user='professional') }}" class="btn btn-outline-primary">Register</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+{% endblock %}

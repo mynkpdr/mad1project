@@ -1,0 +1,138 @@
+{% extends "professional/base.html" %}
+{% block title %}Reviews{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "PROFESSIONAL" %}
+             {% if reviews %}
+                <h1 class="mb-4">Reviews</h1>
+                    <div class="row mb-4 align-items-center">
+                        <div class="col">
+                            <h2 class="mb-0">Reviews</h2>
+                        </div>
+                        <div class="col-auto ml-auto">
+                        <form method="GET" class="d-inline" action="{{url_for('professional.reviews')}}">
+                            <!-- Pagination Control -->
+                            <label for="per-page" class="mr-2">Per page:</label>
+                            <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;">
+                                <option value="5" {% if reviews['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                                <option value="10" {% if reviews['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                                <option value="20" {% if reviews['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if reviews['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                            </select>
+                        
+                            <!-- Sort By Control -->
+                            <label for="sort-by" class="ml-3 mr-2">Sort by:</label>
+                            <select name="sort_by" id="sort-by" class="form-control d-inline" style="width: auto;">
+                                <option value="value" {% if reviews['sort_by'] == 'value' %}selected{% endif %}>Rating</option>
+                                <option value="customer_name" {% if reviews['sort_by'] == 'customer_name' %}selected{% endif %}>Customer Name</option>
+                                <option value="date_created" {% if reviews['sort_by'] == 'date_created' %}selected{% endif %}>Date Created</option>
+                            </select>
+                        
+                            <!-- Direction Control -->
+                            <label for="direction" class="ml-3 mr-2">Direction:</label>
+                            <select name="direction" id="direction" class="form-control d-inline" style="width: auto;">
+                                <option value="asc" {% if reviews['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                                <option value="desc" {% if reviews['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                            </select>
+                                            
+                    {% for key, value in request.args.items() %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    
+                {% endfor %}
+                            
+                            <button type="submit" class="btn btn-primary ml-3">Submit</button>
+                        </form>
+                        </div>
+                    </div>
+
+                            
+                            <div class="card-body">
+                                {% if reviews %}
+                                    <div class="row">
+                                        {% for review in reviews['data'] %}
+                                            <div class="col-md-4 mb-4"> 
+                                                <div class="card bg-dark shadow-sm h-100">
+                                                    <div class="card-body d-flex flex-column">
+                                                        <div class="d-flex mb-3">
+                                                            <div class="mr-3 text-center">
+                                                                <img src="{{ url_for('static', filename='uploads/profile/' ~ review['customer']['profile_image']) }}" 
+                                                                     alt="Customer Picture" 
+                                                                     class="rounded-circle" 
+                                                                     style="width: 50px; height: 50px; object-fit: cover" />
+                                                            </div>
+                                                            <div class="flex">
+                                                                <div class="d-flex text-white">
+                                                                    <a href="{{url_for('professional.customer', id=review['customer']['id'])}}" style="text-decoration: none;"><strong>{{ review['customer']['name'] }}</strong></a>
+                                                                </div>
+                                                                <strong class="small text-muted">{{ review['date_created'] }}</strong>
+                                                               <br>
+                                                                <span class="text-white">{{ review['description'] }}</span>
+                                                                <div>
+                                                                    <span>
+                                                                        {% for i in range(review['value'] | int) %}
+                                                                            <i class="fas fa-star text-warning"></i>
+                                                                        {% endfor %}
+                                                                        {% for i in range(5 - review['value'] | int) %}
+                                                                            <i class="fas fa-star text-muted"></i>
+                                                                        {% endfor %}
+                                                                    </span>
+                                                                    <span class="badge bg-warning text-dark">
+                                                                        {{ review['value'] }} / 5 <i class="fas fa-star"></i>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <a href="{{url_for('professional.service_request', id=review['service_request']['id'])}}" class="btn btn-primary">View</a>
+                                                    </div>
+                                                </div>
+                                            </div> 
+                                        {% endfor %}
+                                    </div> 
+                                {% else %}
+                                    <p class="text-muted">No reviews available.</p>
+                                {% endif %}
+                            </div>
+
+                    
+                    {% if reviews['pagination']['pages'] > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if reviews['pagination']['prev_num'] %}
+                                <li class="page-item">
+                                    {% if reviews['status'] %}
+                                    <a class="page-link" href="{{ url_for('professional.reviews', page=reviews['pagination']['prev_num'], sort_by=reviews['sort_by'], direction=reviews['direction'], per_page=reviews['pagination']['per_page'], status=reviews['status']) }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('professional.reviews', page=reviews['pagination']['prev_num'], sort_by=reviews['sort_by'], direction=reviews['direction'], per_page=reviews['pagination']['per_page']) }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                    {% endif %}
+                                        
+                                </li>
+                            {% endif %}
+                            {% for page_num in range(1, reviews['pagination']['pages'] + 1) %}
+                                <li class="page-item {% if page_num == reviews.page %}active{% endif %}">
+                                    {% if reviews['status'] %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if reviews['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('professional.reviews', page=page_num, sort_by=reviews['sort_by'], direction=reviews['direction'], per_page=reviews['pagination']['per_page'], status=reviews['status']) }}">{{ page_num }}</a>
+                                    {% else %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if reviews['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('professional.reviews', page=page_num, sort_by=reviews['sort_by'], direction=reviews['direction'], per_page=reviews['pagination']['per_page']) }}">{{ page_num }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                            {% if reviews['pagination']['next_num'] %}
+                                <li class="page-item">
+                                    {% if reviews['status'] %}
+                                    <a class="page-link" href="{{ url_for('professional.reviews', page=reviews['pagination']['next_num'], sort_by=reviews['sort_by'], direction=reviews['direction'], per_page=reviews['pagination']['per_page'], status=reviews['status']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('professional.reviews', page=reviews['pagination']['next_num'], sort_by=reviews['sort_by'], direction=reviews['direction'], per_page=reviews['pagination']['per_page']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+
+
+            {% endif %}
+    {% endif %}
+{% endblock %}

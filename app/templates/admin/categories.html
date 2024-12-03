@@ -1,0 +1,257 @@
+{% extends "admin/base.html" %}
+{% block title %}Categories{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        <h1 class="mb-4">Categories</h1>
+        <div class="container-fluid mt-5">
+            <div class="row mb-4 align-items-center">
+                <div class="col">
+                    <h2 class="mb-0">
+                        Categories
+                        <button type="button" class="btn btn-primary btn-sm rounded-circle" data-toggle="modal" data-target="#addCategoryModal">
+                            <i class="fas fa-plus-circle" data-toggle="modal" data-target="#addCategoryModal"></i>
+                        </button>
+                    </h2>
+                    <!-- Modal Structure -->
+                    <div class="modal fade" id="addCategoryModal" tabindex="-1" role="dialog" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="addCategoryModalLabel">Add New Category</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="{{ url_for('admin.categories') }}" enctype="multipart/form-data">
+                                        {{ form.hidden_tag() }} <!-- CSRF token -->
+                                        <!-- Category Name -->
+                                        <div class="mb-3">
+                                            <label class="form-label">
+                                                <i class="fas fa-tag"></i> {{ form.name.label.text }}
+                                            </label>
+                                            {{ form.name(class="form-control", placeholder="Enter category name") }}
+                                        </div>
+                                       
+                                        <!-- Submit Button -->
+                                        <div class="d-grid">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                            {{ form.submit(class="btn btn-primary") }}
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        // Check if the URL has a hash and if it matches the modal ID
+                        window.addEventListener('DOMContentLoaded', function() {
+                            if (window.location.hash === '#addCategoryModal') {
+                                $('#addCategoryModal').modal('show'); // Trigger the modal to show
+                            }
+                        });
+                    </script>
+                </div>
+                <div class="col text-right">
+                    <form method="GET" class="d-inline">
+                        <label for="per-page" class="mr-2">per page:</label>
+                        <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                            <option value="5" {% if categories['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if categories['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if categories['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if categories['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="col text-right">
+                <form class="d-flex justify-content-start" method="GET">
+                    <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control me-2" placeholder="Search for Categories..." aria-label="Search" />
+                    <button class="btn btn-light" disabled>
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                </div>
+            </div>
+            {% if categories %}
+                <table id = "search-table" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="{{ url_for('admin.categories', sort_by='id', direction='asc' if categories['direction'] == 'desc' or categories['sort_by'] != 'id' else 'desc', per_page=categories['pagination']['per_page']) }}">
+                                    ID
+                                    {% if categories['sort_by'] == 'id' %}
+                                        {% if categories['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+
+                            <th>
+                                <a href="{{ url_for('admin.categories', sort_by='name', direction='asc' if categories['direction'] == 'desc' or categories['sort_by'] != 'name' else 'desc',  per_page=categories['pagination']['per_page']) }}">
+                                    Name
+                                    {% if categories['sort_by'] == 'name' %}
+                                        {% if categories['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('admin.categories', sort_by='services_count', direction='asc' if categories['direction'] == 'desc' or categories['sort_by'] != 'services_count' else 'desc',  per_page=categories['pagination']['per_page']) }}">
+                                    Services Count
+                                    {% if categories['sort_by'] == 'services_count' %}
+                                        {% if categories['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+       
+                            <th>
+                                <a href="{{ url_for('admin.categories', sort_by='date_created', direction='asc' if categories['direction'] == 'desc' or categories['sort_by'] != 'date_created' else 'desc',  per_page=categories['pagination']['per_page']) }}">
+                                    Date Created
+                                    {% if categories['sort_by'] == 'date_created' %}
+                                        {% if categories['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            
+                            <th>
+                                <a href="#">Action</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <div id="results"></div>
+                        {% for category in categories['data'] %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('admin.category', id=category['id']) }}">{{ category['id'] }}</a>
+                                </td>
+                                <td>{{ category['name'] }}</td>
+                                <td>{{ category['total_services'] }}</td>
+                                <td>{{ category['date_created'] }}</td>
+                                <td>
+                                    <div class="row justify-content-center">
+                                        <a href="{{ url_for('admin.category', id=category['id']) }}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                        <a href="{{ url_for('admin.category', id=category['id']) }}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ category['id'] }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = category['id'] %}
+                                            {% set message = "Are you sure you want to delete the category " ~ category['name'] ~ "? This action cannot be undone." %}
+                                            {% set action = url_for('admin.category', id=category['id']) %}
+                                            {% include 'modals/confirmation_modal.html' %}                             
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if categories['pagination']['pages'] > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if categories['pagination']['prev_num'] %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.categories', page=categories['pagination']['prev_num'], sort_by=categories['sort_by'], direction=categories['direction'], per_page=categories['pagination']['per_page']) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% for page_num in range(1, categories['pagination']['pages'] + 1) %}
+                                <li class="page-item {% if page_num == categories.page %}active{% endif %}">
+                                    <a class="page-link {{ 'bg-secondary text-white' if categories['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.categories', page=page_num, sort_by=categories['sort_by'], direction=categories['direction'], per_page=categories['pagination']['per_page']) }}">{{ page_num }}</a>
+                                </li>
+                            {% endfor %}
+                            {% if categories['pagination']['next_num'] %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.categories', page=categories['pagination']['next_num'], sort_by=categories['sort_by'], direction=categories['direction'], per_page=categories['pagination']['per_page']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                No Categories Available
+            {% endif %}
+            <script>
+                // Store the original table content
+                const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                
+                // JavaScript function to perform asynchronous search
+                async function search() {
+                    const query = document.getElementById("search-query").value;
+            
+                    // Check if the query is empty
+                    if (query.trim() === "") {
+                        // Restore the original table content
+                        document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                        document.getElementById("results").innerHTML = ""; // Clear the results message
+                        return;
+                    }
+            
+                    // Perform AJAX request to the search API
+                    const response = await fetch(`/api/search?q=${query}&t=category&direction={{categories['direction']}}&sort_by={{categories['sort_by']}}&per_page={{categories['pagination']['per_page']}}&page={{categories['pagination']['current_page']}}`);
+                    const data = await response.json();
+            
+                    // Clear previous results in the results div
+                    const resultsDiv = document.getElementById("results");
+                    resultsDiv.innerHTML = ""; 
+                    
+                    
+                    // Clear existing table rows before appending new results
+                    const existingTableBody = document.querySelector("#search-table tbody");
+                    existingTableBody.innerHTML = ""; 
+            
+                    if (data["data"].length === 0) {
+                        resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                    } else {
+                        resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                        
+                        // Append category results to the existing table
+                        data["data"].forEach((category) => {
+                            const newRow = document.createElement("tr");
+                            newRow.innerHTML = `
+                                <td><a href="/admin/category/${category.id}">${category.id}</a></td>
+                                <td>${category.name}</td>
+                                <td>${category.total_services}</td>
+                                <td>₹ ${category.date_created}</td>
+                                <td>
+                                    <div class="row justify-content-center">
+                                        <a href="/admin/category/${category.id}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                        <a href="/admin/category/${category.id}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal${category.id}">
+                                                <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            `;
+                            existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                        });
+                    }
+                }
+            
+                // Debounce function to delay the search
+                let timeout = null;
+            
+                function debounceSearch() {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                }
+            </script>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+<div class="modal fade" id="blockConfirmationModal{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="blockConfirmationModalLabel{{ modal_id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="blockConfirmationModalLabel{{ modal_id }}">Confirm Block</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-left text-dark">
+                <p>{{message}}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form action="{{action}}" method="POST">
+                    <input type="hidden" name="_method" value="PUT">
+                    <button type="submit" class="btn btn-danger">Block</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

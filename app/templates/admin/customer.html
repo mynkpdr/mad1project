@@ -1,0 +1,490 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ customer['name'] }}{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+    {% if edit %}
+            <div class="container py-4 h-100">
+                <div class="row d-flex justify-content-center align-items-top h-100">
+                    <div class="col-md-4 d-none d-md-block">
+                        <div class="card bg-dark">
+                            <div class="card-body">
+                                <nav class="nav flex-column nav-pills nav-gap-y-1">
+                                    <a href="#profile" data-toggle="tab" class="nav-item nav-link has-icon nav-link-faded active">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user mr-2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                        Profile Information
+                                    </a>
+                                    <a href="#location" data-toggle="tab" class="nav-item nav-link has-icon nav-link-faded">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-map-pin mr-2">
+                                            <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        Location
+                                    </a>
+                                    <a href="#security" data-toggle="tab" class="nav-item nav-link has-icon nav-link-faded">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield mr-2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        </svg>
+                                        Security
+                                    </a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header border-bottom mb-3 d-flex d-md-none">
+                                <ul class="nav nav-tabs card-header-tabs nav-gap-x-1" role="tablist">
+                                    <li class="nav-item">
+                                        <a href="#profile" data-toggle="tab" class="nav-link has-icon active">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="#location" data-toggle="tab" class="nav-link has-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-map-pin mr-2">
+                                                <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 1 1 18 0z"></path>
+                                                <circle cx="12" cy="10" r="3"></circle>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="#security" data-toggle="tab" class="nav-link has-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body tab-content">
+                                <div class="tab-pane active" id="profile">
+                                    <h6>CUSTOMER PROFILE INFORMATION</h6>
+                                    <hr />
+                                    <form action="{{ url_for('admin.customer', id=customer['id'], formx='form_personal') }}" enctype="multipart/form-data" method="POST">
+                                        <input type="hidden" name="_method" value="PUT">
+                                        {{ form_personal.hidden_tag() }}
+                                        <div class="form-group">
+                                            {{ form_personal.name.label(class="form-label") }}
+                                            {{ form_personal.name(class="form-control", value=customer['name']) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form_personal.email.label(class="form-label") }}
+                                            {{ form_personal.email(class="form-control", value=customer['email']) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form_personal.phone.label(class="form-label") }}
+                                            {{ form_personal.phone(class="form-control", value=customer['phone']) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form_personal.username.label(class="form-label") }}
+                                            {{ form_personal.username(class="form-control", value=customer['username']) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form_personal.about.label(class="form-label") }}
+                                            {{ form_personal.about(class="form-control", value=customer['about']) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form_personal.profile_image.label(class="form-label") }}
+                                            {{ form_personal.profile_image(class="form-control", accept="image/*") }}
+                                            <img id="imagePreview" src="{{ url_for('static', filename='uploads/profile/' ~ customer['profile_image']) }}" alt="Customer Image" style="max-width: 20%; height: auto; margin-top: 1rem">
+                                        </div>
+                                        <a href="{{ url_for('admin.customer', id=customer['id']) }}" class="btn btn-secondary">Back</a>
+                                        {{ form_personal.submit(class="btn btn-primary") }}
+                                    </form>
+                                </div>
+                                <div class="tab-pane" id="location">
+                                    <h6>LOCATION INFORMATION</h6>
+                                    <hr />
+                                    <form action="{{ url_for('admin.customer', id=customer['id'], formx='form_address') }}" method="POST">
+                                        <input type="hidden" name="_method" value="PUT">
+                                        {{ form_address.hidden_tag() }}
+                                        <div class="mb-3">
+                                            {{ form_address.address.label(class="form-label") }}
+                                            {{ form_address.address(class="form-control") }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ form_address.pincode.label(class="form-label", for="pincode-input") }}
+                                            <div class="d-flex justify-content-start position-relative">
+                                                {{ form_address.pincode(class="form-control", placeholder="Enter pincode", id="pincode-input") }}
+                                                <a class="btn btn-primary" id="search-button" onclick="fetchAddresses(document.getElementById('pincode-input').value)"><i class="fas fa-search"></i></a>
+                                            </div>
+                                        </div>
+                                        <div id="address-list" class="list-group" style="display: none;"></div>
+                                        <div id="map">
+                                            {{ form_address.lat(class="form-control", value=customer['latitude'], id="lat", type="hidden") }}
+                                            {{ form_address.lng(class="form-control", value=customer['longitude'], id="lng", type="hidden") }}
+                                        </div>
+                                        <a href="{{ url_for('admin.customer', id=customer['id']) }}" class="btn btn-secondary">Back</a>
+                                        {{ form_address.submit(class="btn btn-primary") }}
+                                        <style>
+                                            #map {
+                                                height: 400px;
+                                                width: 100%;
+                                            }
+
+                                            #address-list {
+                                                max-height: 200px;
+                                                overflow-y: auto;
+                                                position: absolute;
+                                                background: white;
+                                                z-index: 999;
+                                                width: 90%;
+                                            }
+                                        </style>
+                                        <!-- Leaflet.js CSS -->
+                                        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                                        <!-- Leaflet.js JavaScript -->
+                                        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+                                        <script>
+                                            document.addEventListener("DOMContentLoaded", function() {
+                                                // Initialize the map directly
+                                                var map = L.map("map").setView(['{{ customer["latitude"] }}', '{{ customer["longitude"] }}'], 17); // User's coordinates
+                                                var pincodeInput = document.getElementById("pincode-input");
+                                                // Add OpenStreetMap tiles
+                                                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                                                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                                                }).addTo(map);
+
+                                                // Add a draggable marker to the map
+                                                var marker = L.marker(['{{ customer["latitude"] }}', '{{ customer["longitude"] }}'], {
+                                                    draggable: true
+                                                }).addTo(map);
+
+                                                // Update the hidden form fields when the marker is dragged
+                                                marker.on("dragend", function() {
+                                                    var latLng = marker.getLatLng();
+                                                    document.getElementById("lat").value = latLng.lat;
+                                                    document.getElementById("lng").value = latLng.lng;
+                                                });
+
+                                                pincodeInput.addEventListener("keydown", function(event) {
+                                                    if (event.key === "Enter") {
+                                                        document.getElementById("search-button").click();
+                                                        // Optionally return false to prevent form submission
+                                                        event.preventDefault();
+                                                    }
+                                                });
+                                                // Function to fetch addresses from Nominatim
+                                                window.fetchAddresses = function(pincode) {
+                                                    if (pincode.length === 6) {
+                                                        var url = `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&country=India&format=json&addressdetails=1`;
+                                                        fetch(url)
+                                                            .then((response) => response.json())
+                                                            .then((data) => {
+                                                                showAddressList(data);
+                                                            })
+                                                            .catch((error) => console.error("Error fetching addresses:", error));
+                                                    } else {
+                                                        document.getElementById("address-list").style.display = "none"; // Hide if pincode is not 6 digits
+                                                    }
+                                                };
+
+                                                // Function to display addresses in a list
+                                                window.showAddressList = function(addresses) {
+                                                    var addressList = document.getElementById("address-list");
+                                                    addressList.innerHTML = ""; // Clear previous results
+                                                    if (addresses.length > 0) {
+                                                        addresses.forEach((address) => {
+                                                            var listItem = document.createElement("a");
+                                                            listItem.href = "#";
+                                                            listItem.className = "list-group-item list-group-item-action";
+                                                            listItem.textContent = address.display_name;
+                                                            listItem.onclick = function() {
+                                                                selectAddress(address);
+                                                                return false; // Prevent default anchor behavior
+                                                            };
+                                                            addressList.appendChild(listItem);
+                                                        });
+                                                        addressList.style.display = "block"; // Show the address list
+                                                    } else {
+                                                        addressList.style.display = "none"; // Hide if no addresses found
+                                                    }
+                                                };
+
+                                                // Function to select an address and update the map
+                                                window.selectAddress = function(address) {
+                                                    var latLng = [address.lat, address.lon];
+                                                    map.setView(latLng, 15); // Set the map view to the new location
+                                                    marker.setLatLng(latLng); // Move the marker to the new location
+                                                    document.getElementById("lat").value = address.lat;
+                                                    document.getElementById("lng").value = address.lon;
+                                                    document.getElementById("address-list").style.display = "none"; // Hide address list after selection
+                                                };
+
+                                                // Add an event listener for tab activation
+                                                $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+                                                    if ($(e.target).attr('href') === '#location') {
+                                                        map.invalidateSize(); // Refresh the map size when the tab is shown
+                                                    }
+                                                });
+                                            });
+                                        </script>
+                                    </form>
+                                </div>
+                                <div class="tab-pane" id="security">
+                                    <h6>SECURITY SETTINGS</h6>
+                                    <hr />
+                                    <form action="{{ url_for('admin.customer', id=customer['id'], formx='form_security') }}" method="POST" id="form_security">
+                                        <input type="hidden" name="_method" value="PUT">
+                                        {{ form_security.hidden_tag() }}
+                                        <div class="form-group">
+                                            <label class="d-block">Change Password</label>
+                                            {{ form_security.current_password(class="form-control", placeholder=form_security.current_password.label.text) }}
+                                            {{ form_security.new_password(class="form-control", placeholder=form_security.new_password.label.text, id="new_password") }}
+                                            {{ form_security.confirm_password(class="form-control", placeholder=form_security.confirm_password.label.text, id="confirm_password") }}
+                                        </div>
+                                        <a href="{{ url_for('admin.customer', id=customer['id']) }}" class="btn btn-secondary">Back</a>
+                                        {{ form_security.submit(class="btn btn-primary", id="password_submit") }}
+                                        <div id="error-message" style="color: red; margin-top: 5px; display: none"></div>
+                                        <!-- Error message div -->
+                                    </form>
+                                    <hr />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function previewImage(event) {
+                    const imagePreview = document.getElementById("imagePreview");
+                    const file = event.target.files[0];
+
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            imagePreview.src = e.target.result;
+                            imagePreview.style.display = "block"; // Show the uploaded image
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        imagePreview.src = "{{ url_for('static', filename='uploads/profile/' ~ customer['profile_image']) }}"; // Reset to current image
+                        imagePreview.style.display = "block"; // Show current image
+                    }
+                }
+
+                document.getElementById("profile_image").addEventListener("change", previewImage);
+            </script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const password = document.getElementById("new_password");
+                    const confirmPassword = document.getElementById("confirm_password");
+                    const submitButton = document.getElementById("password_submit");
+                    const errorMessage = document.getElementById("error-message");
+
+                    // Function to validate if the passwords match
+                    function validatePasswords() {
+                        if (password.value !== confirmPassword.value) {
+                            errorMessage.textContent = "Passwords do not match";
+                            errorMessage.style.display = "block";
+                            submitButton.disabled = true; // Disable the submit button
+                        } else {
+                            errorMessage.style.display = "none"; // Hide error message
+                            submitButton.disabled = false; // Enable the submit button
+                        }
+                    }
+
+                    // Event listeners for both password fields
+                    password.addEventListener("input", validatePasswords);
+                    confirmPassword.addEventListener("input", validatePasswords);
+
+                    // Prevent form submission if passwords don't match
+                    document.getElementById("form_security").addEventListener("submit", function(e) {
+                        if (password.value !== confirmPassword.value) {
+                            e.preventDefault(); // Prevent default form submission
+                            errorMessage.textContent = "Passwords do not match"; // Show error message
+                            errorMessage.style.display = "block"; // Make the error message visible
+                        }
+                    });
+                });
+            </script>
+    {% else %}
+        <div class="container mt-5">
+            <!-- Customer Profile Header Section -->
+            <div class="card shadow mb-5 bg-dark text-white">
+                <div class="row">
+                    <!-- Profile Image and Basic Info -->
+                    <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
+                        <img src="{{ url_for('static', filename='uploads/profile/' ~ customer['profile_image']) }}" alt="Profile Image" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover" />
+                        <h4>{{ customer['username'] }}</h4>
+                        <p class="mb-1">
+                            <i class="fas fa-envelope"></i> {{ customer['email'] }}
+                        </p>
+                        <p>
+                            <i class="fas fa-phone"></i> {{ customer['phone'] }}
+                        </p>
+                        <div class="container text-center">
+                            <a href="{{ url_for('admin.customer', id=customer['id']) }}?edit=true" class="btn btn-secondary btn-sm" title="Edit">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                            
+                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ customer['id'] }}" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% if customer['blocked'] %}
+                            <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#blockConfirmationModal{{ customer['id'] }}" title="Unblock">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                                        <!-- Unblock Confirmation Modal -->
+                                        {% set modal_id = customer['id'] %}
+                                        {% set message = "Are you sure you want to unblock the customer " ~ customer['name'] ~ "?" %}
+                                        {% set action = url_for('admin.customer', id=modal_id, block=False) %}
+                                        {% include 'modals/unblock_confirmation_modal.html' %} 
+                            {% elif not customer['blocked'] %}
+                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#blockConfirmationModal{{ customer['id'] }}" title="Block">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                                        <!-- Block Confirmation Modal -->
+                                        {% set modal_id = customer['id'] %}
+                                        {% set message = "Are you sure you want to block the customer " ~ customer['name'] ~ "?" %}
+                                        {% set action = url_for('admin.customer', id=modal_id, block=True) %}
+                                        {% include 'modals/block_confirmation_modal.html' %} 
+                            {% endif %}
+
+                                        <!-- Confirmation Modal -->
+                                        {% set modal_id = customer['id'] %}
+                                        {% set message = "Are you sure you want to delete the customer " ~ customer['name'] ~ "? This action cannot be undone." %}
+                                        {% set action = url_for('admin.customer', id=modal_id) %}
+                                        {% include 'modals/confirmation_modal.html' %} 
+
+                        </div>
+                    </div>
+                    <!-- Customer Information -->
+                    <div class="col-md-8">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-4">Customer Information</h5>
+                            <div class="row mb-3">
+                                <div class="col-sm-6">
+                                    <strong>Name:</strong>
+                                    <p>{{ customer['name'] }}</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Address:</strong>
+                                    <p>{{ customer['address'] }}, {{ customer['pincode'] }}</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Member Since:</strong>
+                                    <p>{{ customer['date_created'] }}</p>
+                                </div>
+                            </div>
+                            <hr color="white" />
+                            <div class="row mb-3">
+                                {% if customer['last_login'] %}
+                                    <div class="col-sm-6">
+                                        <strong>Last Login:</strong>
+                                        <p>{{ customer['last_login'] }}</p>
+                                    </div>
+                                {% endif %}
+                                <div class="col-sm-6">
+                                    <strong>About:</strong>
+                                    <p>{{ customer['about'] or 'No details provided.' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Map Location Section -->
+            <div class="card shadow-lg border-0 mb-5">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marker-alt"></i> Location
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if customer['latitude'] and customer['longitude'] %}
+                        <div class="row justify-content-center">
+                            <iframe src="https://www.openstreetmap.org/export/embed.html?bbox={{ customer['longitude'] }}%2C{{ customer['latitude'] }}%2C{{ customer['longitude'] }}%2C{{ customer['latitude'] }}&layer=mapnik&marker={{ customer['latitude'] }}%2C{{ customer['longitude'] }}" width="100%" height="450" style="border: 1px solid black" allowfullscreen>
+                            </iframe>
+                        </div>
+                        <small>
+                            <a href="https://www.openstreetmap.org/?mlat={{ customer['latitude'] }}&mlon={{ customer['longitude'] }}#map=16/{{ customer['latitude'] }}/{{ customer['longitude'] }}" target="_blank">View Larger Map</a>
+                        </small>
+                    {% else %}
+                        <p class="text-muted">No Location Added.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Service Requests Section -->
+            <div class="card shadow mb-5">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks"></i> Service History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if customer['recent_service_requests'] %}
+                        <ul class="list-group list-group-flush">
+                            {% for request in customer['recent_service_requests'] %}
+                                <li class="list-group-item py-3">
+                                    <div class="d-flex justify-content-between align-items-center p-3 border rounded bg-light shadow-sm">
+                                        <div class="d-flex flex-column">
+                                            <span class="small text-muted">Service ID: #{{ request['id'] }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge text-white {{ 'bg-success' if request['service_status'] == 'REQUESTED' else 'bg-secondary' if request[service_status] == 'CLOSED' else 'bg-info' if request['service_status'] == 'ASSIGNED' else 'bg-danger' }}">{{ request['service_status'] }}</span>
+                                            <a href="{{ url_for('admin.service_request', id=request['id']) }}" class="btn btn-sm btn-light ms-2">
+                                                <i class="fa-regular fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <p class="small text-muted mb-1">
+                                            <i class="fa-regular fa-calendar"></i> Start Date: <strong>{{ request['start_date'] }}</strong>
+                                            <i class="fa-regular fa-calendar"></i> Date Created: <strong>{{ request['date_created'] }}</strong>
+                                        </p>
+                                        <p class="small text-muted mb-1">
+                                            <i class="fa-solid fa-money-bill"></i> Total Cost: <strong>Rs. {{ request['total_cost'] }}</strong>
+                                        </p>
+                                        <p class="mt-2">
+                                            <strong>Remarks:</strong> <span class="text-muted">{{ request['remarks'] or "No remarks provided." }}</span>
+                                        </p>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No service requests found.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Reviews Given Section -->
+            <div class="card shadow mb-5">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star"></i> Reviews Given
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if customer['recent_reviews'] %}
+                        <ul class="list-group list-group-flush">
+                            {% for review in customer['recent_reviews'] %}
+                                <li class="list-group-item py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong><i class="fas fa-user"></i> {{ review['customer_name'] }}</strong>
+                                        <span class="badge bg-primary text-white">
+                                            {{ review['value'] }} / 5 <i class="fas fa-star"></i>
+                                        </span>
+                                    </div>
+                                    <p class="small text-muted">
+                                        <i class="fas fa-calendar-alt"></i> Reviewed on <strong>{{ review['date_created'] }}</strong>
+                                    </p>
+                                    <p class="mt-2">{{ review['description'] }}</p>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No reviews available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% endif %}
+{% endblock %}

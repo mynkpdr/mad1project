@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block title %}
+        Sign Up
+{% endblock %}
+{% block content %}
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+
+        #address-list {
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            background: white;
+            z-index: 999;
+            width: 90%;
+        }
+    </style>
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+          integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+    <!-- Leaflet.js JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                {% if request.args.get('user') == 'customer' %}
+                    <!-- Customer Registration Form -->
+                    <div class="card" id="signupForm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3>
+                                Sign Up as Customer
+                            </h3>
+                            <a href="{{ url_for('auth.signup', user='professional') }}" class="btn btn-link">Switch to Professional</a>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('auth.signup', user='customer') }}" enctype="multipart/form-data">
+                                {{ customersignupform.hidden_tag() }}
+                                <div class="container">
+                                    <div class="mb-3">
+                                        {{ customersignupform.name.label(class="form-label") }} {{ customersignupform.name(class="form-control", placeholder="Enter full name") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.email.label(class="form-label") }} {{ customersignupform.email(class="form-control", placeholder="Enter email") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.username.label(class="form-label") }} {{ customersignupform.username(class="form-control", placeholder="Enter username") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.phone.label(class="form-label") }} {{ customersignupform.phone(class="form-control", placeholder="Enter phone number") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.address.label(class="form-label") }} {{ customersignupform.address(class="form-control", placeholder="Enter address") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.pincode.label(class="form-label", for="pincode-input") }}
+                                        <div class="d-flex justify-content-start position-relative">
+                                            {{ professionalsignupform.pincode(class="form-control", placeholder="Enter pincode", id="pincode-input") }}
+                                            <a class="btn btn-primary" onclick="fetchAddresses(document.getElementById('pincode-input').value)"><i class="fas fa-search"></i></a>
+                                        </div>
+                                    </div>
+                                    <div id="address-list" class="list-group" style="display: none;">
+                                    </div>
+                                    <div id="map">
+                                        {{ customersignupform.lat(value="12.9914269", id="lat", type="hidden") }}
+                                        {{ customersignupform.lng(value="80.2337286", id="lng", type="hidden") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.profile_image.label(class="form-label") }} {{ customersignupform.profile_image(class="form-control", accept="image/*", oninput="previewImage(event)") }}
+                                        <img id="imagePreview" src="#" alt="Image Preview" width="100" style="display: none;" />
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.password.label(class="form-label", for="signupPassword") }} {{ customersignupform.password(class="form-control", id="signupPassword", placeholder="Enter password") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ customersignupform.confirm_password.label(class="form-label", for="signupConfirmPassword") }} {{ customersignupform.confirm_password(class="form-control", id="signupConfirmPassword", placeholder="Confirm password") }}
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        {{ customersignupform.terms(class="form-check-input") }} {{ customersignupform.terms.label(class="form-check-label") }}
+                                    </div>
+                                    {{ customersignupform.submit(class="btn btn-primary w-100") }}
+                                    <div class="mt-3 text-center">
+                                        <a href="{{ url_for('auth.login') }}" class="btn btn-link">Back to Login</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% elif request.args.get('user') == 'professional' %}
+                    <!-- Professional Registration Form -->
+                    <div class="card" id="signupForm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3>
+                                Sign Up as Professional
+                            </h3>
+                            <a href="{{ url_for('auth.signup', user='customer') }}" class="btn btn-link">Switch to Customer</a>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('auth.signup', user='professional') }}" enctype="multipart/form-data">
+                                {{ professionalsignupform.hidden_tag() }}
+                                <div class="container">
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.name.label(class="form-label") }} {{ professionalsignupform.name(class="form-control", placeholder="Enter full name") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.email.label(class="form-label") }} {{ professionalsignupform.email(class="form-control", placeholder="Enter email") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.username.label(class="form-label") }} {{ professionalsignupform.username(class="form-control", placeholder="Enter username") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.phone.label(class="form-label") }} {{ professionalsignupform.phone(class="form-control", placeholder="Enter phone number") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.address.label(class="form-label") }} {{ professionalsignupform.address(class="form-control", placeholder="Enter address") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.pincode.label(class="form-label", for="pincode-input") }}
+                                        <div class="d-flex justify-content-start position-relative">
+                                            {{ professionalsignupform.pincode(class="form-control", placeholder="Enter pincode", id="pincode-input") }}
+                                            <a class="btn btn-primary" onclick="fetchAddresses(document.getElementById('pincode-input').value)"><i class="fas fa-search"></i></a>
+                                        </div>
+                                    </div>
+                                    <div id="address-list" class="list-group" style="display: none;">
+                                    </div>
+                                    <div id="map">
+                                        {{ professionalsignupform.lat(value="12.9914269", id="lat", type="hidden") }}
+                                        {{ professionalsignupform.lng(value="80.2337286", id="lng", type="hidden") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.profile_image.label(class="form-label") }} {{ professionalsignupform.profile_image(class="form-control", accept="image/*", oninput="previewImage(event)") }}
+                                        <img id="imagePreview" src="#" alt="Image Preview" width="100" style="display: none;" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            {{ professionalsignupform.category.label.text }}
+                                        </label>
+                                        <select id="categorySelect" class="form-control" name="category" required>
+                                            <option value="" selected>
+                                                -- Select a category --
+                                            </option>
+                                            
+                                            {% for category in categories %}
+                                                <option value="{{ category.id }}" name="category">
+                                                    {{ category.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            {{ professionalsignupform.service_name.label.text }}
+                                        </label>
+                                        <select id="serviceSelect" class="form-control" name="service_name" required>
+                                            <option value="">
+                                                -- Select a service --
+                                            </option>
+                                        </select>
+                                        <input type="hidden" id="serviceId" name="service_id" type="number">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            {{ professionalsignupform.service_price.label.text }}
+                                        </label>
+                                        <input id="service_price" type="text" class="form-control" name="service_price" required />
+                                    </div>
+                                    <script>
+                                        // Listen for changes on the category dropdown
+                                        document.getElementById("categorySelect").addEventListener("change", function() {
+                                            var categoryId = this.value;
+
+                                            // Make an AJAX request to get services for the selected category
+                                            if (categoryId) {
+                                                fetch("/api/category/" + categoryId + "/services")
+                                                    .then((response) => response.json())
+                                                    .then((data) => {
+                                                        // Clear the current options in the service dropdown
+                                                        var serviceSelect = document.getElementById("serviceSelect");
+                                                        serviceSelect.innerHTML = '<option value="">-- Select a service --</option>';
+
+                                                        // Add the new services from the response
+                                                        data["data"].forEach((service) => {
+                                                            var option = document.createElement("option");
+                                                            option.value = service.id;
+                                                            option.textContent = service.name + " (Price: ₹" + service.price + ")";
+                                                            option.setAttribute("data-price", service.price); // optional, if you want to access the price later
+                                                            serviceSelect.appendChild(option);
+                                                        });
+                                                        serviceSelect.addEventListener("change", function() {
+                                                        var serviceId = serviceSelect.value;
+                                                        document.getElementById("serviceId").value = serviceId;
+                                                    });
+                                                    })
+                                                    .catch((error) => {
+                                                        console.error("Error fetching services:", error);
+                                                    });
+                                            } else {
+                                                // If no category is selected, clear the service dropdown
+                                                document.getElementById("serviceSelect").innerHTML = '<option value="">-- Select a service --</option>';
+                                                document.getElementById("serviceId").value = "";
+                                            }
+                                        });
+                                    </script>
+                                    <script>
+                                        document.addEventListener("DOMContentLoaded", function() {
+                                            var serviceDropdown = document.getElementById("serviceSelect");
+                                            var priceField = document.getElementById("service_price");
+
+                                            // Function to update the price based on the selected option
+                                            function updatePrice() {
+                                                var selectedOption = serviceDropdown.options[serviceDropdown.selectedIndex];
+                                                var price = selectedOption.getAttribute("data-price");
+                                                priceField.value = price;
+                                            }
+
+                                            // Set the default price when the page loads
+                                            updatePrice();
+
+                                            // Update the price when the user selects a different service
+                                            serviceDropdown.addEventListener("change", updatePrice);
+                                        });
+                                    </script>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.experience.label(class="form-label") }} {{ professionalsignupform.experience(class="form-control", placeholder="Enter years of experience") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.documents.label(class="form-label") }} {{ professionalsignupform.documents(class="form-control", accept="image/*,application/pdf") }}
+                                        <small class="form-text text-muted">Accepted formats: Images and PDF files.</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.password.label(class="form-label", for="signupPassword") }} {{ professionalsignupform.password(class="form-control", id="signupPassword", placeholder="Enter password") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ professionalsignupform.confirm_password.label(class="form-label", for="signupConfirmPassword") }} {{ professionalsignupform.confirm_password(class="form-control", id="signupConfirmPassword",
+                                         placeholder="Confirm password") }}
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        {{ professionalsignupform.terms(class="form-check-input", id="termsCheckbox") }} {{ professionalsignupform.terms.label(class="form-check-label", for="termsCheckbox") }}
+                                    </div>
+                                    {{ professionalsignupform.submit(class="btn btn-primary w-100") }}
+                                    <div class="mt-3 text-center">
+                                        <a href="{{ url_for('auth.login') }}" class="btn btn-link">Back to Login</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    
+                    
+                    
+                        
+                        <div class="row">
+                            <div class="col-md-6 text-center">
+                                <img src="{{ url_for('static', filename='images/customer.png') }}" alt="Customer" class="img-fluid mb-3" style="max-width: 300px;" />
+                                <h3>
+                                    Customer
+                                </h3>
+                                <p>
+                                    Find and book household services easily.
+                                </p>
+                                <a href="{{ url_for('auth.signup', user='customer') }}" class="btn btn-outline-primary">Register</a>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <img src="{{ url_for('static', filename='images/professional.png') }}" alt="Professional" class="img-fluid mb-3" style="max-width: 300px;" />
+                                <h3>
+                                    Service Professional
+                                </h3>
+                                <p>
+                                    Sign up to offer your services and reach customers.
+                                </p>
+                                <a href="{{ url_for('auth.signup', user='professional') }}" class="btn btn-outline-primary">Register</a>
+                            </div>
+                        </div>
+   
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const password = document.getElementById("signupPassword");
+            const confirmPassword = document.getElementById("signupConfirmPassword");
+            const submitButton = document.querySelector("input[type='submit']");
+            const form = document.getElementById("signupForm");
+
+            // Ensure confirmPassword exists before proceeding
+            if (confirmPassword) {
+                const errorMessage = document.createElement("div");
+                // Style the error message
+                errorMessage.style.color = "red";
+                errorMessage.style.marginTop = "5px";
+                errorMessage.style.display = "none";
+
+                // Insert the error message after the confirm password field
+                confirmPassword.parentNode.appendChild(errorMessage);
+
+                // Function to validate if the passwords match
+                function validatePasswords() {
+                    if (password.value !== confirmPassword.value) {
+                        errorMessage.textContent = "Passwords do not match";
+                        errorMessage.style.display = "block";
+                        submitButton.disabled = true;
+                    } else {
+                        errorMessage.style.display = "none";
+                        submitButton.disabled = false;
+                    }
+                }
+
+                // Event listeners for both password fields
+                password.addEventListener("input", validatePasswords);
+                confirmPassword.addEventListener("input", validatePasswords);
+
+                // Prevent form submission if passwords don't match
+                form.addEventListener("submit", function(e) {
+                    if (password.value !== confirmPassword.value) {
+                        e.preventDefault();
+                        errorMessage.textContent = "Passwords do not match";
+                        errorMessage.style.display = "block";
+                    }
+                });
+            } else {}
+        });
+    </script>
+    <script>
+        function previewImage(event) {
+            const imagePreview = document.getElementById("imagePreview");
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = "block"; // Show the image
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = "#";
+                imagePreview.style.display = "none"; // Hide the image if no file
+            }
+        }
+    </script>
+    <script>
+        document.getElementById("pincode-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault(); // Prevent form submission
+            }
+        });
+        // Initialize the map and set the initial view
+        var map = L.map("map").setView([12.9914269, 80.2337286], 17); // Coordinates for our College
+
+        // Add OpenStreetMap tiles
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+
+        // Add a draggable marker to the map
+        var marker = L.marker([12.9914269, 80.2337286], {
+            draggable: true,
+        }).addTo(map);
+
+        // Update the hidden form fields when the marker is dragged
+        marker.on("dragend", function(event) {
+            var latLng = marker.getLatLng();
+            document.getElementById("lat").value = latLng.lat;
+            document.getElementById("lng").value = latLng.lng;
+        });
+
+        // Function to fetch addresses from Nominatim
+        function fetchAddresses(pincode) {
+            if (pincode.length === 6) {
+                // Assuming pincode has 6 digits
+                var url = `https://nominatim.openstreetmap.org/search?postalcode=${pincode}&country=India&format=json&addressdetails=1`;
+                fetch(url)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        showAddressList(data);
+                    })
+                    .catch((error) => console.error("Error fetching addresses:", error));
+            } else {
+                document.getElementById("address-list").style.display = "none"; // Hide list if pincode is not 6 digits
+            }
+        }
+
+        // Function to display addresses in a list
+        function showAddressList(addresses) {
+            var addressList = document.getElementById("address-list");
+            addressList.innerHTML = ""; // Clear previous results
+            if (addresses.length > 0) {
+                addresses.forEach((address) => {
+                    var listItem = document.createElement("a");
+                    listItem.href = "#";
+                    listItem.className = "list-group-item list-group-item-action";
+                    listItem.textContent = address.display_name;
+                    listItem.onclick = function() {
+                        selectAddress(address);
+                        document.getElementById("lat").value = address.lat;
+                        document.getElementById("lng").value = address.lon;
+                        return false; // Prevent default anchor behavior
+                    };
+                    addressList.appendChild(listItem);
+                });
+                addressList.style.display = "contents"; // Show the address list
+            } else {
+                addressList.style.display = "none"; // Hide if no addresses found
+            }
+        }
+
+        // Function to select an address and update the map
+        function selectAddress(address) {
+            var latLng = [address.lat, address.lon];
+            map.setView(latLng, 15); // Set the map view to the new location
+            marker.setLatLng(latLng); // Move the marker to the new location
+            document.getElementById("lat").value = address.lat;
+            document.getElementById("lng").value = address.lon;
+            document.getElementById("address-list").style.display = "none"; // Hide address list after selection
+        }
+    </script>
+{% endblock %}

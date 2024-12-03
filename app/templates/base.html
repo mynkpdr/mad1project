@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <link rel="icon" href="{{ url_for('static', filename='images/favicons_logo/favicon.ico') }}" />
+        <title>
+            {% block title %}A to Z Household Services{% endblock %}
+        </title>
+        
+        <link rel="stylesheet" href="/static/styles/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    </head>
+    <body>
+        {% if request.blueprint == 'admin' %}
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <!-- Container wrapper -->
+            <div class="container-fluid">
+                <button class="btn btn-primary mr-4" id="toggleSidebarx" type="button">
+                    <span class="fa-solid fa-bars"></span>
+                </button>
+                <a class="navbar-brand" href="/">
+                    <img src="{{url_for('static', filename='images/logo_white.png')}}" alt="logo" loading="eager" height="35" class="d-inline-block align-top" />
+                </a>
+                <div class="d-flex flex-grow-1 justify-content-center align-items-center" style="padding: 8px;">
+                    <form action="{{url_for('admin.advancesearch')}}" class="d-flex align-items-center" method="GET">
+                        <div class="input-group" style="border: 1px solid #ced4da; border-radius: 6px; overflow: hidden;">
+                            <!-- Dropdown for search category -->
+                            <select name="t" class="form-select me-2" style="border: none; border-right: 1px solid #ced4da;">
+                                <option value="professional" {% if request.args.get('t') == 'professional' %}selected{% endif %}>Professional</option>
+                                <option value="customer" {% if request.args.get('t') == 'customer' %}selected{% endif %}>Customer</option>
+                                <option value="service_request" {% if request.args.get('t') == 'service_request' %}selected{% endif %}>Service Request</option>
+                                <option value="service" {% if request.args.get('t') == 'service' %}selected{% endif %}>Service</option>
+                            </select>
+                            <!-- Search input -->
+                            <input type="text" name="q" class="form-control" placeholder="Search..." aria-label="Search" value="{% if q %}{{q}}{% endif %}" style="border: none; box-shadow: none;" />
+                            <!-- Search button with icon -->
+                            <button class="btn btn-outline-secondary" type="submit" style="border: none;">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Left links -->
+                 
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link text-white dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                            <i class="fas fa-bell"></i>
+                            <span id="notification-count" class="badge badge-light">{{ get_notifications() | length }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right p-3" aria-labelledby="servicesDropdown" style="width: 300px; max-height: 400px; overflow-x: auto;">
+                            {% if get_notifications() %}
+                            <h6 class="dropdown-header">Notifications</h6>
+                            <!-- Full width "Mark All as Read" button -->
+                            <form action="{{ url_for('admin.mark_notification_as_read', notification_id=0) }}" method="post">
+                                <button type="submit" class="btn btn-outline-primary btn-sm btn-block" id="mark-all-btn" onclick="markAllAsRead()">Mark All as Read</button>
+                            </form>
+                            <div class="dropdown-divider"></div>
+                            <!-- Individual Notifications with icon-based "Mark as Read" -->
+                            <div id="notification-list">
+                                {% for notification in get_notifications() %}
+                                <div class="dropdown-item d-flex justify-content-between align-items-center notification-item" id="notification-{{ notification.id }}" style="cursor: pointer;">
+                                    <a
+                                        href="{{ url_for('admin.notification', notification_link=notification.link, notification_id=notification.id) }}"
+                                        class="dropdown-item d-flex justify-content-between align-items-center notification-item"
+                                    >
+                                        <span class="text-wrap">{{ notification.message }}</span>
+                                        <a href="{{ url_for('admin.notification', notification_link=notification.link) }}" class="btn btn-sm btn-outline-secondary" style="display: none;">
+                                            <i class="fa-regular fa-eye"></i>
+                                            <!-- Icon to view details -->
+                                        </a>
+                                        
+                                        <form
+                                            action="{{ url_for('admin.mark_notification_as_read', notification_id=notification.id) }}"
+                                            method="post"
+                                            style="display: inline;"
+                                            onsubmit="setTimeout(() => removeNotification('{{ notification.id }}'), 100);"
+                                        >
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit" data-bs-toggle="tooltip" data-bs-placement="top" title="Mark as Read">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        </form>
+                                    </a>
+                                </div>
+                                {% if not loop.last %}
+                                <div class="dropdown-divider"></div>
+                                
+                                {% endif %} {% endfor %}
+                            </div>
+                            {% else %}
+                            
+                            <div class="dropdown-item text-center text-muted">No notifications</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                </ul>
+                
+<div class="dropdown">
+    <a class="dropdown-toggle d-flex align-items-center text-white" href="#" id="profileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <img src="{{ url_for('static', filename='uploads/profile/' ~ current_user.profile_image) }}" alt="Profile Image" class="img-fluid rounded-circle mr-2 ml-2" style="width: 40px; height: 40px; object-fit: cover" />
+    </a>
+  
+    <!-- Dropdown Menu -->
+    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="profileDropdown">
+      <a class="dropdown-item" href="{{url_for('admin.profile')}}">View Profile</a>
+      <a class="dropdown-item" href="{{url_for('admin.profile', edit=true)}}">Edit Profile</a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item text-danger" href="{{url_for('auth.logout')}}">Logout</a>
+    </div>
+  </div>
+            </div>
+        </nav>
+        <script>
+            document.getElementById("toggleSidebarx").addEventListener("click", function () {
+                var sidebar = document.getElementById("sidebar");
+
+                sidebar.classList.toggle("sidebar-hidden");
+            });
+        </script>
+        <!-- Navbar -->
+        {% elif request.blueprint == 'professional' %}
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <!-- Container wrapper -->
+            <div class="container-fluid">
+                <button class="btn btn-primary mr-4" id="toggleSidebarx" type="button">
+                    <span class="fa-solid fa-bars"></span>
+                </button>
+
+                <a class="navbar-brand" href="/">
+                    <img src="{{url_for('static', filename='images/logo_white.png')}}" alt="logo" loading="eager" height="35" class="d-inline-block align-top" />
+                </a>
+                <div class="d-flex flex-grow-1 justify-content-center align-items-center" style="padding: 8px;">
+
+                </div>
+                
+                <!-- Left links -->
+                 
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link text-white dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                            <i class="fas fa-bell"></i>
+                            <span id="notification-count" class="badge badge-light">{{ get_notifications() | length }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right p-3" aria-labelledby="servicesDropdown" style="width: 300px; max-height: 400px; overflow-x: auto;">
+                            {% if get_notifications() %}
+                            <h6 class="dropdown-header">Notifications</h6>
+                            <!-- Full width "Mark All as Read" button -->
+                            <form action="{{ url_for('professional.mark_notification_as_read', notification_id=0) }}" method="post">
+                                <button type="submit" class="btn btn-outline-primary btn-sm btn-block" id="mark-all-btn" onclick="markAllAsRead()">Mark All as Read</button>
+                            </form>
+                            <div class="dropdown-divider"></div>
+                            <!-- Individual Notifications with icon-based "Mark as Read" -->
+                            <div id="notification-list">
+                                {% for notification in get_notifications() %}
+                                <div class="dropdown-item d-flex justify-content-between align-items-center notification-item" id="notification-{{ notification.id }}" style="cursor: pointer;">
+                                    <a
+                                        href="{{ url_for('professional.notification', notification_link=notification.link, notification_id=notification.id) }}"
+                                        class="dropdown-item d-flex justify-content-between align-items-center notification-item"
+                                    >
+                                        <span class="text-wrap">{{ notification.message }}</span>
+                                        <a href="{{ url_for('professional.notification', notification_link=notification.link) }}" class="btn btn-sm btn-outline-secondary" style="display: none;">
+                                            <i class="fa-regular fa-eye"></i>
+                                            <!-- Icon to view details -->
+                                        </a>
+                                        
+                                        <form
+                                            action="{{ url_for('professional.mark_notification_as_read', notification_id=notification.id) }}"
+                                            method="post"
+                                            style="display: inline;"
+                                            onsubmit="setTimeout(() => removeNotification('{{ notification.id }}'), 100);"
+                                        >
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit" data-bs-toggle="tooltip" data-bs-placement="top" title="Mark as Read">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                        </form>
+                                    </a>
+                                </div>
+                                {% if not loop.last %}
+                                <div class="dropdown-divider"></div>
+                                
+                                {% endif %} {% endfor %}
+                            </div>
+                            {% else %}
+                            
+                            <div class="dropdown-item text-center text-muted">No notifications</div>
+                            {% endif %}
+                        </div>
+                    </li>
+                </ul>
+                
+<div class="dropdown">
+    <a class="dropdown-toggle d-flex align-items-center text-white" href="#" id="profileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <img src="{{ url_for('static', filename='uploads/profile/' ~ current_user.profile_image) }}" alt="Profile Image" class="img-fluid rounded-circle mr-2 ml-2" style="width: 40px; height: 40px; object-fit: cover">
+    </a>
+  
+    <!-- Dropdown Menu -->
+    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="profileDropdown">
+      <a class="dropdown-item" href="{{url_for('professional.profile')}}">View Profile</a>
+      <a class="dropdown-item" href="{{url_for('professional.profile', edit=true)}}">Edit Profile</a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item text-danger" href="{{url_for('auth.logout')}}">Logout</a>
+    </div>
+  </div>
+            </div>
+        </nav>
+        <script>
+            document.getElementById("toggleSidebarx").addEventListener("click", function () {
+                var sidebar = document.getElementById("sidebar");
+
+                sidebar.classList.toggle("sidebar-hidden");
+            });
+        </script>
+        <!-- Navbar -->
+        {% elif current_user.is_authenticated %}
+        {% if current_user.role.name == "CUSTOMER" %}
+        <style>
+            /* Set the base font for the entire document */
+            body {
+                font-family: 'Roboto', sans-serif;
+                /* You can set a fallback font here */
+                font-size: 16px; /* Optional: set the base font size */
+                line-height: 1.2; /* Optional: set the line height for readability */
+            }
+        </style>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <!-- Logo -->
+        <a class="navbar-brand" href="/">
+            <img src="{{ url_for('static', filename='images/logo_white.png') }}" alt="logo" loading="eager" height="50" class="d-inline-block align-top" />
+        </a>
+
+        <!-- Toggler for Mobile -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar Links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link text-white {{'bg-primary' if  request.path == '/'}}" href="{{ url_for('main.index') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white {{'bg-primary' if '/dashboard' in request.path}}" href="{{ url_for('customer.dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white {{'bg-primary' if '/service' in request.path}}" href="{{ url_for('customer.services') }}">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white {{'bg-primary' if '/nearby' in request.path}}" href="{{ url_for('customer.nearby') }}">Nearby</a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav ml-4">
+                <li class="nav-item dropdown">
+                    <a class="nav-link text-white dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">
+                        <i class="fas fa-bell"></i>
+                        <span id="notification-count" class="badge badge-light">{{ get_notifications() | length }}</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right p-3" aria-labelledby="servicesDropdown" style="width: 300px; max-height: 400px; overflow-x: auto;">
+                        {% if get_notifications() %}
+                        <h6 class="dropdown-header">Notifications</h6>
+                        <!-- Full width "Mark All as Read" button -->
+                        <form action="{{ url_for('customer.mark_notification_as_read', notification_id=0) }}" method="post">
+                            <button type="submit" class="btn btn-outline-primary btn-sm btn-block" id="mark-all-btn" onclick="markAllAsRead()">Mark All as Read</button>
+                        </form>
+                        <div class="dropdown-divider"></div>
+                        <!-- Individual Notifications with icon-based "Mark as Read" -->
+                        <div id="notification-list">
+                            {% for notification in get_notifications() %}
+                            <div class="dropdown-item d-flex justify-content-between align-items-center notification-item" id="notification-{{ notification.id }}" style="cursor: pointer;">
+                                <a
+                                    href="{{ url_for('customer.notification', notification_link=notification.link, notification_id=notification.id) }}"
+                                    class="dropdown-item d-flex justify-content-between align-items-center notification-item"
+                                >
+                                    <span class="text-wrap">{{ notification.message }}</span>
+                                    <a href="{{ url_for('customer.notification', notification_link=notification.link) }}" class="btn btn-sm btn-outline-secondary" style="display: none;">
+                                        <i class="fa-regular fa-eye"></i>
+                                        <!-- Icon to view details -->
+                                    </a>
+                                    
+                                    <form
+                                        action="{{ url_for('customer.mark_notification_as_read', notification_id=notification.id) }}"
+                                        method="post"
+                                        style="display: inline;"
+                                        onsubmit="setTimeout(() => removeNotification('{{ notification.id }}'), 100);"
+                                    >
+                                        <button class="btn btn-sm btn-outline-secondary" type="submit" data-bs-toggle="tooltip" data-bs-placement="top" title="Mark as Read">
+                                            <i class="fas fa-check-circle"></i>
+                                        </button>
+                                    </form>
+                                </a>
+                            </div>
+                            {% if not loop.last %}
+                            <div class="dropdown-divider"></div>
+                            
+                            {% endif %} {% endfor %}
+                        </div>
+                        {% else %}
+                        
+                        <div class="dropdown-item text-center text-muted">No notifications</div>
+                        {% endif %}
+                    </div>
+                </li>
+            </ul>
+            
+            <div class="dropdown">
+                <a class="dropdown-toggle d-flex align-items-center text-white" href="#" id="profileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <img src="{{ url_for('static', filename='uploads/profile/' ~ current_user.profile_image) }}" alt="Profile Image" class="img-fluid rounded-circle mr-2 ml-2" style="width: 40px; height: 40px; object-fit: cover" />
+                </a>
+              
+                <!-- Dropdown Menu -->
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="profileDropdown">
+                  <a class="dropdown-item" href="{{url_for('customer.profile')}}">View Profile</a>
+                  <a class="dropdown-item" href="{{url_for('customer.profile', edit=true)}}">Edit Profile</a>
+                  <div class="dropdown-divider"></div>
+                  <a class="dropdown-item text-danger" href="{{url_for('auth.logout')}}">Logout</a>
+                </div>
+              </div>
+
+        </div>
+    </div>
+</nav>
+
+
+
+        {% endif %}
+        {% else %}
+        <div class="container-fluid">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white">
+                <div class="container">
+                    <!-- Logo on the left -->
+                    <a class="navbar-brand" href="/">
+                        <img src="{{url_for('static', filename='images/logo.png')}}" alt="logo" loading="eager" height="50" class="d-inline-block align-top" />
+                    </a>
+                    
+                    <!-- Navbar Toggler for mobile -->
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+    
+                    <!-- Center Links and Right-Side Buttons -->
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <!-- Center Links -->
+                        <ul class="navbar-nav mx-auto">
+                            <li class="nav-item">
+                                <a href="{{ url_for('main.index') }}" class="nav-link px-2 link-dark">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ url_for('main.about') }}" class="nav-link px-2 link-dark">About</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ url_for('main.contact') }}" class="nav-link px-2 link-dark">Contact</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ url_for('main.terms') }}" class="nav-link px-2 link-dark">Terms</a>
+                            </li>
+                        </ul>
+                        
+                        <!-- Right-Side Login and Signup Buttons -->
+                        <div class="ml-auto">
+                            <a class="btn btn-outline-primary me-2" href="{{ url_for('auth.login') }}">Login</a>
+                            <a class="btn btn-primary" href="{{ url_for('auth.signup') }}">Signup</a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        {% endif %}
+        {% if request.blueprint == 'main' or request.blueprint == 'auth' %} {% with messages = get_flashed_messages(with_categories=True) %} {% if messages %}
+        <div class="alert-container" style="position: relative;">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" style="opacity: 1; transition: opacity 1s ease-in-out; position: relative; z-index: 100;" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        <script>
+            // Use a timeout to automatically hide alerts after 5 seconds
+            setTimeout(function () {
+                const alerts = document.querySelectorAll(".alert-container .alert");
+                alerts.forEach((alert) => {
+                    alert.style.opacity = "0"; // Start fading out
+
+                    // Wait for the fade transition to end before removing the alert
+                    setTimeout(() => {
+                        alert.remove(); // Remove the alert from the DOM
+                    }, 500); // 0.5 seconds for fade-out duration
+                });
+            }, 5000); // 5 seconds
+        </script>
+        {% endif %} {% endwith %}
+        <script>
+            // Use a timeout to automatically hide alerts after 5 seconds
+            setTimeout(function () {
+                const alerts = document.querySelectorAll(".alert-container .alert");
+                alerts.forEach((alert) => {
+                    alert.classList.remove("show");
+                    alert.classList.add("fade");
+                    // You can also remove the alert completely after fading out
+                    setTimeout(() => {
+                        alert.style.display = "none";
+                    }, 500); // 0.5 seconds for fade-out duration
+                });
+            }, 5000); // 5 seconds
+        </script>
+        {% endif %}  
+        <script>
+            function indianNumberFormat(number) {
+                // Convert the number to a string
+                let numStr = number.toString();
+                
+                // If the number is less than 1000, just return it as it is (no commas)
+                if (numStr.length <= 3) {
+                    return numStr;
+                }
+
+                // Split the number into the last 3 digits (for thousands) and the rest
+                let lastThree = numStr.slice(-3);
+                let rest = numStr.slice(0, -3);
+                
+                // Add commas to the rest part (thousands and crores part)
+                rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ","); // This regex adds commas after every 2 digits
+                
+                // Return the formatted number in Indian format
+                return rest + "," + lastThree;
+            }
+
+        </script>
+        {% block content %} {% endblock %}
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white text-center py-3">
+            <p>&copy; 2024 A to Z Household Services. All rights reserved.</p>
+        </footer>
+        <script>
+            // Function to remove a single notification from the DOM
+            function removeNotification(notificationId) {
+                const notificationElement = document.getElementById(`notification-${notificationId}`);
+                if (notificationElement) {
+                    notificationElement.remove();
+
+                    // Decrease the notification count
+                    const notificationCountElement = document.getElementById("notification-count");
+                    let currentCount = parseInt(notificationCountElement.textContent);
+                    if (currentCount > 0) {
+                        notificationCountElement.textContent = currentCount - 1;
+                    }
+                }
+            }
+
+            // Function to remove all notifications from the DOM after marking all as read
+            function markAllAsRead() {
+                const notificationList = document.getElementById("notification-list");
+                if (notificationList) {
+                    // Remove all notifications
+                    notificationList.innerHTML = "";
+
+                    // Set the notification count to 0
+                    const notificationCountElement = document.getElementById("notification-count");
+                    notificationCountElement.textContent = 0;
+                }
+            }
+        </script>
+        
+        <script src="/static/js/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        
+        <script src="/static/js/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+        
+        <script src="/static/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
+    </body>
+</html>

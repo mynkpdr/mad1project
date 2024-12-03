@@ -1,0 +1,140 @@
+{% extends "admin/base.html" %}
+{% block title %}Service{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        {% if edit %}
+            <div class="container py-4 h-100">
+                <div class="row d-flex justify-content-center align-items-top h-100">
+                    <div class="col-lg-8 mb-4 mb-lg-0">
+                        <div class="card shadow">
+                            <div class="card-header text-center bg-primary text-white">
+                                <h3>Edit Service</h3>
+                            </div>
+                            <div class="card-body">
+                                <form action="{{ url_for('admin.service', id=service['id']) }}" method="POST" enctype="multipart/form-data">
+                                    <input type="hidden" name="_method" value="PUT">
+                                    {{ form.hidden_tag() }}
+                                    <!-- CSRF Token -->
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">
+                                            <i class="fas fa-tag"></i> {{ form.name.label.text }}
+                                        </label>
+                                        {{ form.name(class="form-control") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="price" class="form-label">
+                                            <i class="fas fa-money-bill-wave"></i> {{ form.price.label.text }}
+                                        </label>
+                                        {{ form.price(class="form-control") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="category" class="form-label">
+                                            <i class="fas fa-folder"></i> {{ form.category.label.text }}
+                                        </label>
+                                        <select id="category" name="category" class="form-control">
+                                            {% for cat_id, cat_name in form.category.choices %}
+                                                <option value="{{ cat_id }}" {% if cat_id == service['category']['id'] %}selected{% endif %}>{{ cat_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">
+                                            <i class="fas fa-info-circle"></i> {{ form.description.label.text }}
+                                        </label>
+                                        {{ form.description(class="form-control") }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="image" class="form-label">
+                                            <i class="fas fa-image"></i> {{ form.image.label.text }}
+                                        </label>
+                                        {{ form.image(class="form-control", accept="image/*") }}
+                                        <small class="form-text text-muted">Leave blank to keep the current image.</small>
+                                        <img id="imagePreview" src="{{ url_for('static', filename='images/' ~ service['image']) }}" alt="Current Service Image" style="max-width: 20%; height: auto; margin-top: 1rem;" />
+                                    </div>
+                                    <div class="d-grid">
+                                        <a href="{{ request.referrer or url_for('admin.service', id=service['id']) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+                                        {{ form.submit(class="btn btn-primary btn-sm", value="Submit") }}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function previewImage(event) {
+                    const imagePreview = document.getElementById("imagePreview");
+                    const file = event.target.files[0];
+
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            imagePreview.src = e.target.result;
+                            imagePreview.style.display = "block"; // Show the uploaded image
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        imagePreview.src = "{{ url_for('static', filename='images/' ~ service['image']) }}"; // Reset to current image
+                        imagePreview.style.display = "block"; // Show current image
+                    }
+                }
+
+                document.getElementById("image").addEventListener("change", previewImage);
+            </script>
+        {% else %}
+            <div class="container py-4 h-100">
+                <div class="row d-flex justify-content-center align-items-top h-100">
+                    <div class="col-lg-8 mb-4 mb-lg-0">
+                        <div class="card shadow">
+                            <div class="card-header text-center bg-primary text-white">
+                                <h3>Service Details</h3>
+                            </div>
+                            {% if service %}
+                                <div class="card-body">
+                                    <h4 class="card-title text-center">{{ service['name'] }}</h4>
+                                    <!-- Service Image -->
+                                    <div class="text-center mb-4">
+                                        <img src="{{ url_for('static', filename='images/' ~ service['image']) }}" alt="Service Image" class="img-fluid rounded" style="max-width: 20%; height: auto;" />
+                                    </div>
+                                    <!-- Service Price -->
+                                    <p class="card-text">
+                                        <strong><i class="fas fa-tag"></i> Price: </strong> ₹{{ service['price'] }}
+                                    </p>
+                                    <!-- Service Category -->
+                                    <p class="card-text">
+                                        <strong><i class="fas fa-folder"></i> Category: </strong>{{ service['category']['name'] }}
+                                    </p>
+                                    <!-- Description -->{{ service['description'] }}
+                                    <p class="card-text">
+                                        <strong><i class="fas fa-info-circle"></i> Description: </strong> {{ service['description'] or 'No description available' }}
+                                    </p>
+                                    <!-- Date Created -->
+                                    <p class="card-text">
+                                        <strong><i class="fas fa-calendar-alt"></i> Created On: </strong> {{ service['date_created'] }}
+                                    </p>
+                                    <!-- Action Buttons -->
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <a href="{{ request.referrer or url_for('admin.service', id=service['id']) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+                                        <div>
+                                            <a href="{{ url_for('admin.service', id=service['id']) }}?edit=true" class="btn btn-primary btn-sm me-2"><i class="fas fa-edit"></i> Edit</a>
+                                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ service['id'] }}">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = service['id'] %}
+                                            {% set message = "Are you sure you want to delete the service " ~ service['name'] ~ "? This action cannot be undone." %}
+                                            {% set action = url_for('admin.service', id=modal_id) %}
+                                            {% include 'modals/confirmation_modal.html' %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                Service not found
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

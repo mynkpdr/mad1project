@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    {% if current_user.role.name == "PROFESSIONAL" %}
+    <style>
+        /* Transition to hide/show sidebar */
+        #sidebar {
+            transition: all 0.3s;
+        }
+
+        /* Sidebar hidden (initially visible) */
+        .sidebar-hidden {
+            margin-left: -250px;
+            /* Width of the sidebar */
+        }
+
+        /* Ensure the hamburger button is always visible */
+        #toggleSidebar {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1;
+        }
+
+        /* Main content area adjusts depending on sidebar visibility */
+        .main-content {
+            margin-left: 250px;
+            transition: margin-left 0.3s;
+        }
+
+        .main-content.sidebar-hidden {
+            margin-left: 0;
+        }
+    </style>
+        <!-- Sidebar -->
+        <div class="d-flex">
+            <div class="bg-dark p-3" id="sidebar" style="width: 250px;">
+                <h4 class="text-white">Professional Panel</h4>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint.startswith('professional.dashboard') %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('professional.dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint.startswith('professional.service_request') %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('professional.service_requests') }}">
+                            <i class="fas fa-envelope"></i> Service Requests
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint.startswith('professional.review') %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('professional.reviews') }}">
+                            <i class="fas fa-star"></i> Reviews
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint.startswith('professional.profile') %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('professional.profile') }}"> <i class="fas fa-user-circle"></i> Profile </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('auth.logout') }}"> <i class="fas fa-sign-out-alt"></i> Logout </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="container-fluid d-flex flex-column justify-content-start align-items-center vh-100 overflow-auto">
+                {% with messages = get_flashed_messages(with_categories=True) %}
+                    {% if messages %}
+                        <div class="alert-container" style="position: relative;">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" style="opacity: 1; transition: opacity 1s ease-in-out; position: relative; z-index: 100" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <script>
+                            // Use a timeout to automatically hide alerts after 5 seconds
+                            setTimeout(function() {
+                                const alerts = document.querySelectorAll('.alert-container .alert');
+                                alerts.forEach(alert => {
+                                    alert.style.opacity = '0'; // Start fading out
+
+                                    // Wait for the fade transition to end before removing the alert
+                                    setTimeout(() => {
+                                        alert.remove(); // Remove the alert from the DOM
+                                    }, 500); // 0.5 seconds for fade-out duration
+                                });
+                            }, 5000); // 5 seconds
+                        </script>
+                    {% endif %}
+                {% endwith %}
+                <script>
+                    // Use a timeout to automatically hide alerts after 5 seconds
+                    setTimeout(function() {
+                        const alerts = document.querySelectorAll('.alert-container .alert');
+                        alerts.forEach(alert => {
+                            alert.classList.remove('show');
+                            alert.classList.add('fade');
+                            // You can also remove the alert completely after fading out
+                            setTimeout(() => {
+                                alert.style.display = 'none';
+                            }, 500); // 0.5 seconds for fade-out duration
+                        });
+                    }, 5000); // 5 seconds
+                </script>
+                <div class="container-fluid align-items-center mt-3" id="main-content">
+                {% block main %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

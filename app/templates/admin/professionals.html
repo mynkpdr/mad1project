@@ -1,0 +1,344 @@
+{% extends "admin/base.html" %}
+{% block title %}Professionals{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        <h1 class="mb-4">Professionals</h1>
+        <!-- PROFESSIONALS -->
+        <div class="container-fluid mt-5">
+            {% if professionals %}
+            <div class="row mb-4 align-items-center">
+                <div class="col">
+                    <h2 class="mb-0">Professionals</h2>
+                </div>
+                <form method="GET" action="{{ url_for('admin.professionals') }}" class="d-inline mr-3">
+                    
+                    <button type="submit" name="blocked" value="{% if request.args.get('blocked') == 'true' %}""{% else %}true{% endif %}" class="btn {{'btn-danger' if request.args.get('blocked') == 'true' else 'btn-dark'}}">
+                        Blocked
+                    </button>
+                    
+                    
+                    <button type="submit" name="blocked" value="{% if request.args.get('blocked') == 'false' %}""{% else %}false{% endif %}" class="btn {{'btn-success' if request.args.get('blocked') == 'false' else 'btn-dark'}}">
+                        Active
+                    </button>
+                
+                    
+                    {% for key, value in request.args.items() %}
+                        {% if key != 'blocked' and key !='page' %}  <!-- Exclude 'blocked' and 'page' to avoid overwriting -->
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                </form>
+                <div class="col-auto ml-auto">
+                    <form method="GET" class="d-inline mr-3">
+                        <label for="per-page" class="mr-2">Per page:</label>
+                        <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                            <option value="5" {% if professionals['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if professionals['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if professionals['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if professionals['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </form>
+                    <form class="d-inline-flex" method="GET">
+                        <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control mr-2" placeholder="Search for Service Requests..." aria-label="Search" />
+                        <button class="btn btn-light" disabled>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>  
+            </div>
+ 
+            
+            <table id = "search-table" class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>
+                            {% if professionals['blocked'] %}
+                            <a href="{{ url_for('admin.professionals', sort_by='id', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'id' else 'desc', per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">
+                                {% else %}
+                                <a href="{{ url_for('admin.professionals', sort_by='id', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'id' else 'desc', per_page=professionals['pagination']['per_page']) }}">
+                                {% endif %}
+                                ID
+                                {% if professionals['sort_by'] == 'id' %}
+                                    {% if professionals['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+
+                            </a>
+                        </th>
+                        <th>
+                            {% if professionals['blocked'] %}
+                            <a href="{{ url_for('admin.professionals', sort_by='name', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'name' else 'desc', per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.professionals', sort_by='name', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'name' else 'desc', per_page=professionals['pagination']['per_page']) }}">
+                                {% endif %}
+                                    Name
+                                {% if professionals['sort_by'] == 'name' %}
+                                    {% if professionals['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% if professionals['blocked'] %}
+                            <a href="{{ url_for('admin.professionals', sort_by='service_name', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'service_name' else 'desc', per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.professionals', sort_by='service_name', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'service_name' else 'desc', per_page=professionals['pagination']['per_page']) }}">
+                                {% endif %}
+                                    Service Name
+                                {% if professionals['sort_by'] == 'service_name' %}
+                                    {% if professionals['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% if professionals['blocked'] %}
+                            <a href="{{ url_for('admin.professionals', sort_by='email', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'email' else 'desc', per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">
+                                {% else %}
+                                <a href="{{ url_for('admin.professionals', sort_by='email', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'email' else 'desc', per_page=professionals['pagination']['per_page']) }}">
+                                {% endif %}
+                                    Email
+                                {% if professionals['sort_by'] == 'email' %}
+                                    {% if professionals['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% if professionals['blocked'] %}
+                            <a href="{{ url_for('admin.professionals', sort_by='date_created', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'date_created' else 'desc', per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.professionals', sort_by='date_created', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'date_created' else 'desc', per_page=professionals['pagination']['per_page']) }}">
+                               {% endif %}
+                                    Date Created
+                                {% if professionals['sort_by'] == 'date_created' %}
+                                    {% if professionals['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            {% if professionals['blocked'] %}
+                            <a href="{{ url_for('admin.professionals', sort_by='active', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'active' else 'desc', per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.professionals', sort_by='active', direction='asc' if professionals['direction'] == 'desc' or professionals['sort_by'] != 'active' else 'desc', per_page=professionals['pagination']['per_page']) }}">
+                                {% endif %}
+                                    Active
+                                {% if professionals['sort_by'] == 'active' %}
+                                    {% if professionals['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="#">Action</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <div id="results"></div>
+                    {% for professional in professionals['data'] %}
+                        {% if professional['blocked'] %}
+                        <tr class="bg-danger text-white">
+                        {% else %}
+                        <tr>
+                            {% endif %}
+                            <td>
+                                <a href="{{ url_for('admin.professional', id=professional['id']) }}">{{ professional['id'] }}</a>
+                            </td>
+                            <td>{{ professional['name'] }}</td>
+                            <td>{{ professional['service_name'] }}</td>
+                            <td>{{ professional['email'] }}</td>
+                            <td>{{ professional['date_created'] }}</td>
+                            {% if professional['active'] == True %}
+                                <td>Yes</td>
+                            {% elif professional['active'] == False %}
+                                <td>No</td>
+                            {% endif %}
+                            <td>
+                                <div class="row justify-content-center">
+                                    {% if professional['active'] == True %}
+                                    {% elif professional['active'] == False %}
+                                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#approveConfirmationModal{{professional['id']}}">
+                                        <i class="fas fa-user-check"></i>
+                                </button>
+                                    {% endif %}
+                                    <a href="{{ url_for('admin.professional', id=professional['id']) }}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                    <a href="{{ url_for('admin.professional', id=professional['id']) }}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{professional['id']}}">
+                                        <i class="fas fa-trash"></i>
+                                </button>
+                                </div>
+                            </td>
+                        </tr>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = professional['id'] %}
+                                            {% set message = "Are you sure you want to delete the professional " ~ professional['name'] ~ "? This action cannot be undone." %}
+                                            {% set action = url_for('admin.professional', id=professional['id']) %}
+                                            {% include 'modals/confirmation_modal.html' %}  
+                                            <!-- Approve Confirmation Modal -->
+                                            {% set modal_id = professional['id'] %}
+                                            {% set message = "Are you sure you want to approve the professional " ~ professional['name'] ~ "?" %}
+                                            {% set action1 = url_for('admin.professional', id=professional['id'], approve=True) %}
+                                            {% set action2 = url_for('admin.professional', id=professional['id'], block=True) %}
+                                            {% include 'modals/approve_confirmation_modal.html' %}  
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if professionals['pagination']['pages'] > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if professionals['pagination']['prev_num'] %}
+                            <li class="page-item">
+                                {% if professionals['blocked'] %}
+                                <a class="page-link" href="{{ url_for('admin.professionals', page=professionals['pagination']['prev_num'], sort_by=professionals['sort_by'], direction=professionals['direction'], per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                                {% else %}
+                                <a class="page-link" href="{{ url_for('admin.professionals', page=professionals['pagination']['prev_num'], sort_by=professionals['sort_by'], direction=professionals['direction'], per_page=professionals['pagination']['per_page']) }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                                {% endif %}
+                            </li>
+                        {% endif %}
+                        {% for page_num in range(1, professionals['pagination']['pages'] + 1) %}
+                            <li class="page-item {% if page_num == professionals['pagination']['current_page'] %}active{% endif %}">
+                                {% if professionals['blocked'] %}
+                                <a class="page-link {{ 'bg-secondary text-white' if professionals['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.professionals', page=page_num, sort_by=professionals['sort_by'], direction=professionals['direction'], per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}">{{ page_num }}</a>
+                                {% else %}
+                                <a class="page-link {{ 'bg-secondary text-white' if professionals['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.professionals', page=page_num, sort_by=professionals['sort_by'], direction=professionals['direction'], per_page=professionals['pagination']['per_page']) }}">{{ page_num }}</a>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        {% if professionals['pagination']['next_num'] %}
+                            <li class="page-item">
+                                {% if professionals['blocked'] %}
+                                <a class="page-link" href="{{ url_for('admin.professionals', page=professionals['pagination']['next_num'], sort_by=professionals['sort_by'], direction=professionals['direction'], per_page=professionals['pagination']['per_page'], blocked=professionals['blocked']) }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                                {% else %}
+                                <a class="page-link" href="{{ url_for('admin.professionals', page=professionals['pagination']['next_num'], sort_by=professionals['sort_by'], direction=professionals['direction'], per_page=professionals['pagination']['per_page']) }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                                {% endif %}
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+            <script>
+                // Store the original table content
+                const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                
+                // JavaScript function to perform asynchronous search
+                async function search() {
+                    const query = document.getElementById("search-query").value;
+            
+                    // Check if the query is empty
+                    if (query.trim() === "") {
+                        // Restore the original table content
+                        document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                        document.getElementById("results").innerHTML = ""; // Clear the results message
+                        return;
+                    }
+            
+                    // Perform AJAX request to the search API
+                    const response = await fetch(`/api/search?q=${query}&t=professional&direction={{professionals['direction']}}&sort_by={{professionals['sort_by']}}&per_page={{professionals['pagination']['per_page']}}&page={{professionals['pagination']['current_page']}}&blocked={{professionals['blocked']}}`);
+                    const data = await response.json();
+            
+                    // Clear previous results in the results div
+                    const resultsDiv = document.getElementById("results");
+                    resultsDiv.innerHTML = ""; 
+                    
+                    
+                    // Clear existing table rows before appending new results
+                    const existingTableBody = document.querySelector("#search-table tbody");
+                    existingTableBody.innerHTML = ""; 
+            
+                    if (data["data"].length === 0) {
+                        resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                    } else {
+                        resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                        // Append professional results to the existing table
+                        data["data"].forEach((professional) => {
+                            let activeContent = '';
+                            let statusClass = '';
+                                if (professional['blocked'] === true) {
+                                    statusClass = 'bg-danger';
+                                } else if (professional['blocked'] === false) {
+                                    statusClass = '';
+                                }
+                                let approveButtonHTML = ''; // Initialize the variable for the approve button HTML;
+                                // Determine the active status content
+                                if (professional['active'] === true) {
+                                    activeContent = 'Yes';
+                                } else if (professional['active'] === false) {
+                                    activeContent = 'No';
+                                    // Only show the approve button if the professional is not active
+                                    approveButtonHTML = `
+                                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#approveConfirmationModal${professional.id}">
+                                        <i class="fas fa-user-check"></i>
+                                    </button>`;
+                                }
+                            const newRow = document.createElement("tr");
+                            if (statusClass) {
+                                newRow.classList.add(statusClass);
+                                newRow.classList.add('text-white');
+                            }
+                            newRow.innerHTML = `
+                                <td><a href="/admin/professional/${professional.id}">${professional.id}</a></td>
+                                <td>${professional.name}</td>
+                                <td>${professional.service_name}</td>
+                                <td>${professional.email}</td>
+                                <td>${professional.date_created}</td>
+                                <td>${activeContent}</td>
+                                <td>
+                                    <div class="row justify-content-center">
+                                         ${approveButtonHTML}
+                                        <a href="/admin/professional/${professional.id}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                        <a href="/admin/professional/${professional.id}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal${professional.id}">
+                                            <i class="fas fa-trash"></i>
+                                    </button>
+                                    </div>
+                                </td>
+                            `;
+                            existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                        });
+                    }
+                }
+            
+                // Debounce function to delay the search
+                let timeout = null;
+            
+                function debounceSearch() {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                }
+            </script>
+            {% else %}
+            No professionals Available
+            {% endif %}
+        </div>
+            
+       
+    {% endif %}
+{% endblock %}

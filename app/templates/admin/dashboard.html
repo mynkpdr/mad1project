@@ -1,0 +1,456 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        <h1 class="mb-4">Dashboard</h1>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <div class="container">
+            <div class="row">
+                <!-- Revenue Chart -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card" style="height: 100%;">
+                        <div class="card-body p-0" style="height: 100%;">
+                            <canvas id="revenueChart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Users Chart -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <canvas id="usersChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Service Requests Chart -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card" style="height: 100%;">
+                        <div class="card-body p-0" style="height: 100%;">
+                            <canvas id="serviceRequestsChart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            // Users Chart (Customers vs Professionals)
+            const ctxUsers = document.getElementById('usersChart').getContext('2d');
+            const usersChart = new Chart(ctxUsers, {
+                type: 'pie',
+                data: {
+                    labels: ['Customers', 'Professionals'],
+                    datasets: [{
+                        label: 'Users Distribution',
+                        data: ['{{ customers | length }}', '{{ professionals | length }}'],
+                        backgroundColor: ['#FF671F', '#046A38'],
+                        hoverBackgroundColor: ['#CC5319', '#1c7430'],
+                        borderColor: ['#ffffff', '#ffffff'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Users Overview',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 30
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ": " + tooltipItem.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Service Requests Chart (Requested, Assigned, and Closed)
+            const ctxServiceRequests = document.getElementById('serviceRequestsChart').getContext('2d');
+            const serviceRequestsChart = new Chart(ctxServiceRequests, {
+                type: 'bar',
+                data: {
+                    labels: ['Requested', 'Assigned', 'Closed', 'Rejected'],
+                    datasets: [{
+                        label: 'Service Requests',
+                        data: ['{{ service_status_requested | length }}', '{{ service_status_assigned | length }}', '{{ service_status_closed | length }}', '{{service_status_rejected | length}}'],
+                        backgroundColor: ['#28a745', '#17a2b8', '#6c757d', '#dc3545'],
+                        hoverBackgroundColor: ['#1c7430', '#138496', '#5a636a', '#8B0000'],
+                        borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+                        borderWidth: 1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                // Ensure ticks are whole numbers
+                                callback: function(value) {
+                                    return Number.isInteger(value) ? value : ''; // Only show integers
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        title: {
+                            display: true,
+                            text: 'Service Requests Overview',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ": " + tooltipItem.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+
+        </script>
+            <script>
+                 const ctx = document.getElementById('revenueChart').getContext('2d');
+                const revenueData = JSON.parse('{{ revenue_data|tojson|safe }}');
+        // Extract labels and data points
+        const labels = revenueData.map(dataPoint => new Date(dataPoint.x).toLocaleDateString()); // Format date
+        const dataPoints = revenueData.map(dataPoint => dataPoint.y);
+
+        const revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Monthly Revenue',
+                    data: dataPoints,
+                    borderColor: 'rgba(0, 123, 255, 1)', // Line color
+                    backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                title: {
+                    display: true,
+                    text: 'Revenue last month',
+                    font: {
+                        size: 18,
+                        weight: 'bold'
+                    },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            // Format the tooltip value using Indian number format
+                            return ' ₹ ' + indianNumberFormat(tooltipItem.raw);
+                        }
+                    }
+                }
+            },
+                scales: {
+                    y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹ ' + indianNumberFormat(value); // Apply Indian format to y-axis labels
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)',
+                    }
+                },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date',
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+        <!-- Stats Row -->
+        <div class="row">
+
+            <div class="col-md-3">
+                <div class="card text-white mb-4" style="background-color: #20c997 ;">
+                    <div class="card-body">Revenue</div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <span>₹ {{ total_revenue | indian_rupee_format }} /-</span>
+                        <i class="fas fa-money-bill"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white mb-4" style="background-color: #FF671F;">
+                    <div class="card-body">Customers</div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <span>{{ customers | length }}</span>
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white mb-4" style="background-color: #046A38;">
+                    <div class="card-body">Professionals</div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <span>Total: {{ professionals | length }}, {{ unactiveprofessionals | length }} Unactive</span>
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white mb-4" style="background-color: #ffc107;">
+                    <div class="card-body">Service Requests</div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <span>{{ service_requests | length }}</span>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Data Table -->
+        <div class="card mb-4">
+            {% if users %}
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <i class="	fas fa-table"></i> Latest Users
+                    </div>
+                    <div class="col-auto ml-auto">
+                        <form method="GET" class="d-inline mr-3">
+                            <label for="per-page" class="mr-2">Per page:</label>
+                            <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                                <option value="5" {% if users['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                                <option value="10" {% if users['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                                <option value="20" {% if users['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                                <option value="50" {% if users['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                            </select>
+                            {% for key, value in request.args.items() %}
+                            {% if key != 'per_page' %}  <!-- Exclude per_page to avoid duplicates -->
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                        </form>
+                        <form class="d-inline-flex" method="GET">
+                            <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control mr-2" placeholder="Search for Users..." aria-label="Search" />
+                            <button class="btn btn-light" disabled>
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+       
+            </div>
+            <div class="card-body">
+                
+                    <table id ="search-table" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <a href="{{ url_for('admin.dashboard', sort_by='id', direction='asc' if users['direction'] == 'desc' or users['sort_by'] != 'id' else 'desc', per_page=users['pagination']['per_page']) }}#results">
+                                        ID
+                                        {% if users['sort_by'] == 'id' %}
+                                            {% if users['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('admin.dashboard', sort_by='name', direction='asc' if users['direction'] == 'desc' or users['sort_by'] != 'name' else 'desc', per_page=users['pagination']['per_page']) }}#results">
+                                        Name
+                                        {% if users['sort_by'] == 'name' %}
+                                            {% if users['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('admin.dashboard', sort_by='email', direction='asc' if users['direction'] == 'desc' or users['sort_by'] != 'email' else 'desc', per_page=users['pagination']['per_page']) }}#results">
+                                        Email
+                                        {% if users['sort_by'] == 'email' %}
+                                            {% if users['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('admin.dashboard', sort_by='role', direction='asc' if users['direction'] == 'desc' or users['sort_by'] != 'role' else 'desc', per_page=users['pagination']['per_page']) }}#results">
+                                        Role
+                                        {% if users['sort_by'] == 'role' %}
+                                            {% if users['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('admin.dashboard', sort_by='date_created', direction='asc' if users['direction'] == 'desc' or users['sort_by'] != 'date_created' else 'desc', per_page=users['pagination']['per_page']) }}#results">
+                                        Date Created
+                                        {% if users['sort_by'] == 'date_created' %}
+                                            {% if users['direction'] == 'asc' %}
+                                                ↑
+                                            {% else %}
+                                                ↓
+                                            {% endif %}
+                                        {% endif %}
+                                    </a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <div id="results"></div>
+                            {% for user in users['data'] %}
+                                <tr>
+                                    {% if user['role'] == "PROFESSIONAL" %}
+                                        <td>
+                                            <a href="{{ url_for('admin.professional', id=user['professional_id']) }}">{{ user['professional_id'] }}</a>
+                                        </td>
+                                    {% elif user['role'] == "CUSTOMER" %}
+                                        <td>
+                                            <a href="{{ url_for('admin.customer', id=user['customer_id']) }}">{{ user['customer_id'] }}</a>
+                                        </td>
+                                    {% elif user['role'] == "ADMIN" %}
+                                    <td><a href="#">{{ user['id'] }}</a></td>
+                                    {% endif %}
+                                    <td>{{ user['name'] }}</td>
+                                    <td>{{ user['email'] }}</td>
+                                    <td>{{ user['role'].capitalize() }}</td>
+                                    <td>{{ user['date_created'] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if users['pagination']['pages'] > 1 %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if users['pagination']['prev_num'] %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.dashboard', page=users['pagination']['prev_num'], sort_by=users['sort_by'], direction=users['direction'], per_page=users['pagination']['per_page']) }}#results" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% for page_num in range(1, users['pagination']['pages'] + 1) %}
+                                    <li class="page-item {% if page_num == users['pagination']['current_page'] %}active{% endif %}">
+                                        <a class="page-link {{ 'bg-secondary text-white' if users['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.dashboard', page=page_num, sort_by=users['sort_by'], direction=users['direction'], per_page=users['pagination']['per_page']) }}#results">{{ page_num }}</a>
+                                    </li>
+                                {% endfor %}
+                                {% if users['pagination']['next_num'] %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.dashboard', page=users['pagination']['next_num'], sort_by=users['sort_by'], direction=users['direction'], per_page=users['pagination']['per_page']) }}#results" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                    <script>
+                        // Store the original table content
+                        const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                        
+                        // JavaScript function to perform asynchronous search
+                        async function search() {
+                            const query = document.getElementById("search-query").value;
+                    
+                            // Check if the query is empty
+                            if (query.trim() === "") {
+                                // Restore the original table content
+                                document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                                document.getElementById("results").innerHTML = ""; // Clear the results message
+                                return;
+                            }
+                    
+                            // Perform AJAX request to the search API
+                            const response = await fetch(`/api/search?q=${query}&t=user&direction={{users['direction']}}&sort_by={{users['sort_by']}}&per_page={{users['pagination']['per_page']}}&page={{users['pagination']['current_page']}}`);
+                            const data = await response.json();
+                    
+                            // Clear previous results in the results div
+                            const resultsDiv = document.getElementById("results");
+                            resultsDiv.innerHTML = ""; 
+                            
+                            
+                            // Clear existing table rows before appending new results
+                            const existingTableBody = document.querySelector("#search-table tbody");
+                            existingTableBody.innerHTML = ""; 
+                    
+                            if (data["data"].length === 0) {
+                                resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                            } else {
+                                resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                                
+                                // Append user results to the existing table
+                                data["data"].forEach((user) => {
+                                    const newRow = document.createElement("tr");
+                                    let userRole = '';
+                                    if (user.role === 'Professional') {
+                                        userRole = `Professional`;
+                                    } else if (user.role === 'Customer') {
+                                        userRole = `Customer`;
+                                    } else if (user.role === 'Admin') {
+                                        // Optionally handle other roles or default case
+                                        userRole = `Admin`;
+                                    } else {
+                                        userRole = 'None';
+                                    }
+                                    newRow.innerHTML = `
+                                        <td><a href="/${userRole}/${user.id}">${user.id}</a></td>
+                                        <td>${user.name}</td>
+                                        <td>${user.email}</td>
+                                        <td>${userRole}</td>
+                                        <td>${user.date_created}</td>
+                                    `;
+                                    existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                                });
+                            }
+                        }
+                    
+                        // Debounce function to delay the search
+                        let timeout = null;
+                    
+                        function debounceSearch() {
+                            clearTimeout(timeout);
+                            timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                        }
+                    </script>
+                {% else %}
+                    No users found
+                {% endif %}
+            </div>
+        </div>
+
+    {% endif %}
+{% endblock %}

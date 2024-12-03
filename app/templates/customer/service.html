@@ -1,0 +1,137 @@
+{% extends "customer/base.html" %}
+{% block title %}Services{% endblock %}
+{% block main %}
+{% if services %}
+<h1>Professionals in {{services['data']['name']}}</h1>
+<section style="background-color: #eee;">
+    <div class="container py-5">
+      <div class="row ml-3 mr-3 mb-4">
+        <div class="col">
+            <form method="GET" action="">
+                <div class="form-inline w-100">
+                    <div class="form-group flex-grow-1 mr-2">
+                        <label for="search" class="mr-2">Search:</label>
+                        <input type="text" id="search" class="form-control" placeholder="Search professionals" onkeyup="filterServices()">
+                    </div>
+                    
+                    <!-- Sort by Name -->
+                    <div class="form-group mr-2">
+                        <label for="sort_by" class="mr-2">Sort by:</label>
+                        <select id="sort_by" name="sort_by" class="form-control">
+                            <option value="rating" {% if services['data']['sort_by'] == 'rating' %}selected{% endif %}>Rating</option>
+                            <option value="price" {% if services['data']['sort_by'] == 'price' %}selected{% endif %}>Price</option>
+                            <option value="distance" {% if request.args.get('sort_by') == 'distance' %}selected{% endif %}>Distance</option>
+                        </select>
+                    </div>
+    
+                    <!-- Sort Direction (Ascending or Descending) -->
+                    <div class="form-group mr-2">
+                        <label for="direction" class="mr-2">Direction:</label>
+                        <select id="direction" name="direction" class="form-control">
+                            <option value="asc" {% if services['data']['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                            <option value="desc" {% if services['data']['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                        </select>
+                    </div>
+    
+                    <button type="submit" class="btn btn-primary">Sort</button>
+                </div>
+            </form>
+        </div>
+    </div>
+        {% for service in services['data']['professionals'] %}
+        <div class="row justify-content-center mb-3">
+          <div class="col-md-12 col-xl-10  service-card"  data-name="{{ service['name'] | lower }}">
+            <div class="card shadow-0 border rounded-3">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12 col-lg-3 col-xl-3 mb-4 mb-lg-0">
+                    <div class="bg-image hover-zoom ripple rounded ripple-surface">
+                      <img src="{{ url_for('static', filename='uploads/profile/' ~ service['image']) }}"
+                      class="card-img-top" 
+                                  alt="image" 
+                                  style="height: 180px; width:100%; object-fit: cover;">
+                      <a href="#!">
+                        <div class="hover-overlay">
+                          <div class="mask" style="background-color: rgba(253, 253, 253, 0.15);"></div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="col-md-6 col-lg-6 col-xl-6">
+                    <h5 class="font-weight-bold text-dark"><a href="{{url_for('customer.service_professional', service_id=services['data']['id'], professional_id=service['id'])}}" style="text-decoration: none;">{{ service['name'] }}</a></h5>
+                    
+                    <div class="d-flex align-items-center mb-2">
+                      <span class="badge bg-secondary text-white">{{ service['rating'] }}</span>
+                      <span class="ml-2">
+                        {% for i in range(service['rating'] | int) %}
+                          <i class="fas fa-star text-warning"></i>
+                        {% endfor %}
+                        {% for i in range(5 - service['rating'] | int) %}
+                          <i class="fas fa-star text-muted"></i>
+                        {% endfor %}
+                        <b class="badge bg-secondary text-white">({{ service['total_reviews'] }})</b>
+                      </span>
+                    </div>
+                    
+                    <div class="mt-1 mb-2 text-muted small">
+                      <span class="badge badge-success pt-1">{{ services['data']['category']['name'] }}</span>
+                      <span class="text-dark mx-1">•</span>
+                      <span class="badge badge-danger pt-1">{{ services['data']['name'] }}</span>
+                      {% if service['total_service_requests_completed'] %}
+                        <span class="text-dark mx-1">•</span>
+                        <span class="badge badge-secondary pt-1">{{ service['total_service_requests_completed'] }} completed</span>
+                      {% endif %}
+                    </div>
+                    
+                    <p class="text-truncate mb-3 font-italic text-muted">{{ service['about'] }}</p>
+                    <p class="mb-2"><b>Address:</b> {{ service['address'] }}</p>
+                    
+                    <p class="mb-0">
+                      {% if service['distance'] < 1 %}
+                        <b>Distance:</b> < 1 Km
+                      {% else %}
+                        <b>Distance:</b> < {{ service['distance'] | round | int }} Km
+                      {% endif %}
+                    </p>
+                  </div>
+                  
+                  <div class="col-md-6 col-lg-3 col-xl-3 border-sm-start-none border-start">
+                    <div class="d-flex flex-row align-items-center mb-1">
+                      <h4 class="mb-1 me-1">₹{{ service['price'] | indian_rupee_format }}</h4>
+                      {% if services['data']['price'] > service['price'] %}
+                      <span class="ml-1 text-danger"><s>₹{{ services['data']['price'] | indian_rupee_format }}</s></span>
+                      {% endif %}
+                  </div>
+                    
+                    <div class="d-flex flex-column mt-4">
+                      <a href="{{url_for('customer.service_professional', service_id=services['data']['id'], professional_id=service['id'])}}" class="btn btn-primary btn-sm" type="button">View Professional</a>
+                      <a href="{{url_for('customer.service_request', service_id=services['data']['id'], professional_id=service['id'])}}" class="btn btn-outline-primary btn-sm mt-2" type="button">
+                        Make a Service Request
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+  </section>
+  <script>
+    function filterServices() {
+        const searchInput = document.getElementById('search').value.toLowerCase();
+        const serviceCards = document.querySelectorAll('.service-card');
+    
+        serviceCards.forEach(card => {
+            const serviceName = card.getAttribute('data-name');
+            if (serviceName.includes(searchInput)) {
+                card.style.display = 'block'; // Show matching card
+            } else {
+                card.style.display = 'none'; // Hide non-matching card
+            }
+        });
+    }
+    </script>
+{% endif %}
+{% endblock %}

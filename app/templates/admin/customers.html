@@ -1,0 +1,274 @@
+{% extends "admin/base.html" %}
+{% block title %}Customers{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        <h1 class="mb-4">Customers</h1>
+        <!-- CUSTOMERS -->
+        <div class="container-fluid mt-5">
+            {% if customers %}
+            <div class="row mb-4 align-items-center">
+                <div class="col">
+                    <h2 class="mb-0">Customers</h2>
+                </div>
+                <form method="GET" action="{{ url_for('admin.customers') }}" class="d-inline mr-3">
+
+                    <button type="submit" name="blocked" value="{% if request.args.get('blocked') == 'true' %}""{% else %}true{% endif %}" class="btn {{'btn-danger' if request.args.get('blocked') == 'true' else 'btn-dark'}}">
+                        Blocked
+                    </button>
+
+                    <button type="submit" name="blocked" value="{% if request.args.get('blocked') == 'false' %}""{% else %}false{% endif %}" class="btn {{'btn-success' if request.args.get('blocked') == 'false' else 'btn-dark'}}">
+                        Active
+                    </button>
+                
+                    {% for key, value in request.args.items() %}
+                        {% if key != 'blocked' and key !='page' %}  
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                </form>
+                <div class="col-auto ml-auto">
+                    <form method="GET" class="d-inline mr-3">
+                        <label for="per-page" class="mr-2">Per page:</label>
+                        <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                            <option value="5" {% if customers['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if customers['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if customers['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if customers['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </form>
+                    <form class="d-inline-flex" method="GET">
+                        <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control mr-2" placeholder="Search for Service Requests..." aria-label="Search" />
+                        <button class="btn btn-light" disabled>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>  
+            </div>
+            
+                <table id="search-table" class="table table-bordered table-striped">
+                    
+                    <thead>
+                        <tr>
+                            <th>
+                                {% if customers['blocked'] %}
+                                <a href="{{ url_for('admin.customers', sort_by='id', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'id' else 'desc', per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}">
+                                {% else %}
+                                    <a href="{{ url_for('admin.customers', sort_by='id', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'id' else 'desc', per_page=customers['pagination']['per_page']) }}">
+                                    {% endif %}
+                                        ID
+                                    {% if customers['sort_by'] == 'id' %}
+                                        {% if customers['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                {% if customers['blocked'] %}
+                                <a href="{{ url_for('admin.customers', sort_by='name', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'name' else 'desc', per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}">
+                                {% else %}
+                                    <a href="{{ url_for('admin.customers', sort_by='name', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'name' else 'desc', per_page=customers['pagination']['per_page']) }}">
+                                    {% endif %}
+                                        Name
+                                    {% if customers['sort_by'] == 'name' %}
+                                        {% if customers['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                {% if customers['blocked'] %}
+                                <a href="{{ url_for('admin.customers', sort_by='email', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'email' else 'desc', per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}">
+                                {% else %}
+                                    <a href="{{ url_for('admin.customers', sort_by='email', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'email' else 'desc', per_page=customers['pagination']['per_page']) }}">
+                                    {% endif %}
+                                        Email
+                                    {% if customers['sort_by'] == 'email' %}
+                                        {% if customers['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                {% if customers['blocked'] %}
+                                <a href="{{ url_for('admin.customers', sort_by='date_created', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'date_created' else 'desc', per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}">
+                                {% else %}
+                                    <a href="{{ url_for('admin.customers', sort_by='date_created', direction='asc' if customers['direction'] == 'desc' or customers['sort_by'] != 'date_created' else 'desc', per_page=customers['pagination']['per_page']) }}">
+                                    {% endif %}
+                                        Date Created
+                                    {% if customers['sort_by'] == 'date_created' %}
+                                        {% if customers['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="#">Action</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <div id="results"></div>
+                        {% for customer in customers['data'] %}
+                        {% if customer['blocked'] %}
+                        <tr class="bg-danger text-white">
+                        {% else %}
+                        <tr>
+                            {% endif %}
+                                <td>
+                                    <a href="{{ url_for('admin.customer', id =customer['id']) }}">{{ customer['id'] }}</a>
+                                </td>
+                                <td>{{ customer['name'] }}</td>
+                                <td>{{ customer['email'] }}</td>
+                                <td>{{ customer['date_created'] }}</td>
+                                <td>
+                                    <div class="row justify-content-center">
+                                        <a href="{{ url_for('admin.customer', id=customer['id']) }}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                        <a href="{{ url_for('admin.customer', id=customer['id']) }}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ customer['id'] }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = customer['id'] %}
+                                            {% set message = "Are you sure you want to delete the customer " ~ customer['name'] ~ "? This action cannot be undone." %}
+                                            {% set action = url_for('admin.customer', id=customer['id']) %}
+                                            {% include 'modals/confirmation_modal.html' %}  
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if customers['pagination']['pages'] > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if customers['pagination']['prev_num'] %}
+                                <li class="page-item">
+                                    {% if customers['blocked'] %}
+                                    <a class="page-link" href="{{ url_for('admin.customers', page=customers['pagination']['prev_num'], sort_by=customers['sort_by'], direction=customers['direction'], per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('admin.customers', page=customers['pagination']['prev_num'], sort_by=customers['sort_by'], direction=customers['direction'], per_page=customers['pagination']['per_page']) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                            {% for page_num in range(1, customers['pagination']['pages'] + 1) %}
+                                <li class="page-item {% if page_num == customers['pagination']['current_page'] %}active{% endif %}">
+                                    {% if customers['blocked'] %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if customers['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.customers', page=page_num, sort_by=customers['sort_by'], direction=customers['direction'], per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}">{{ page_num }}</a>
+                                    {% else %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if customers['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.customers', page=page_num, sort_by=customers['sort_by'], direction=customers['direction'], per_page=customers['pagination']['per_page']) }}">{{ page_num }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                            {% if customers['pagination']['next_num'] %}
+                                <li class="page-item">
+                                    {% if customers['blocked'] %}
+                                    <a class="page-link" href="{{ url_for('admin.customers', page=customers['pagination']['next_num'], sort_by=customers['sort_by'], direction=customers['direction'], per_page=customers['pagination']['per_page'], blocked=customers['blocked']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('admin.customers', page=customers['pagination']['next_num'], sort_by=customers['sort_by'], direction=customers['direction'], per_page=customers['pagination']['per_page']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                <script>
+                    // Store the original table content
+                    const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                
+                    // JavaScript function to perform asynchronous search
+                    async function search() {
+                        const query = document.getElementById("search-query").value;
+                
+                        // Check if the query is empty
+                        if (query.trim() === "") {
+                            // Restore the original table content
+                            document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                            document.getElementById("results").innerHTML = ""; // Clear the results message
+                            return;
+                        }
+                
+                        // Perform AJAX request to the search API
+                        const response = await fetch(`/api/search?q=${query}&t=customer&direction={{customers['direction']}}&sort_by={{customers['sort_by']}}&per_page={{customers['pagination']['per_page']}}&page={{customers['pagination']['current_page']}}&blocked={{customers['blocked']}}`);
+                        const data = await response.json();
+                
+                        // Clear previous results in the results div
+                        const resultsDiv = document.getElementById("results");
+                        resultsDiv.innerHTML = ""; 
+                
+                        // Clear existing table rows before appending new results
+                        const existingTableBody = document.querySelector("#search-table tbody");
+                        existingTableBody.innerHTML = ""; 
+                
+                        if (data["data"].length === 0) {
+                            resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                        } else {
+                            resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                            
+                            // Append customer results to the existing table
+                            data["data"].forEach((customer) => {
+                                let statusClass = '';
+                                if (customer['blocked'] === true) {
+                                    statusClass = 'bg-danger';
+                                } else if (customer['blocked'] === false) {
+                                    statusClass = '';
+                                }
+                                const newRow = document.createElement("tr");
+                                if (statusClass) {
+                                newRow.classList.add(statusClass);
+                                newRow.classList.add('text-white');
+                            }
+                                newRow.innerHTML = `
+                                    <td><a href="/admin/customer/${customer.id}">${customer.id}</a></td>
+                                    <td>${customer.name}</td>
+                                    <td>${customer.email}</td>
+                                    <td>${customer.date_created}</td>
+                                    <td>
+                                        <div class="row justify-content-center">
+                                            <a href="/admin/customer/${customer.id}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                            <a href="/admin/customer/${customer.id}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal${customer.id}">
+                                                    <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                `;
+                                existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                            });
+                        }
+                    }
+                
+                    // Debounce function to delay the search
+                    let timeout = null;
+                
+                    function debounceSearch() {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                    }
+                </script>
+            {% else %}
+                No Customers Available
+            {% endif %}
+        </div>
+
+    {% endif %}
+{% endblock %}

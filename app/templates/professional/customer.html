@@ -1,0 +1,157 @@
+{% extends "professional/base.html" %}
+{% block title %}Customer{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "PROFESSIONAL" %}
+
+<div class="container mt-5">
+    <!-- Customer Profile Header Section -->
+    <div class="card shadow mb-5 bg-dark text-white">
+        <div class="row">
+            <!-- Profile Image and Basic Info -->
+            <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
+                <img src="{{ url_for('static', filename='uploads/profile/' ~ customer['profile_image']) }}" alt="Profile Image" class="img-fluid rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover" />
+                <h4>{{ customer['username'] }}</h4>
+                <p class="mb-1">
+                    <i class="fas fa-envelope"></i> {{ customer['email'] }}
+                </p>
+                <p>
+                    <i class="fas fa-phone"></i> {{ customer['phone'] }}
+                </p>
+
+            </div>
+            <!-- Customer Information -->
+            <div class="col-md-8">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">Customer Information</h5>
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <strong>Name:</strong>
+                            <p>{{ customer['name'] }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Address:</strong>
+                            <p>{{ customer['address'] }}, {{ customer['pincode'] }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Member Since:</strong>
+                            <p>{{ customer['date_created'] }}</p>
+                        </div>
+                    </div>
+                    <hr color="white" />
+                    <div class="row mb-3">
+                        {% if customer['last_login'] %}
+                            <div class="col-sm-6">
+                                <strong>Last Login:</strong>
+                                <p>{{ customer['last_login'] }}</p>
+                            </div>
+                        {% endif %}
+                        <div class="col-sm-6">
+                            <strong>About:</strong>
+                            <p>{{ customer['about'] or 'No details provided.' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Map Location Section -->
+    <div class="card shadow-lg border-0 mb-5">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-map-marker-alt"></i> Location
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if customer['latitude'] and customer['longitude'] %}
+                <div class="row justify-content-center">
+                    <iframe src="https://www.openstreetmap.org/export/embed.html?bbox={{ customer['longitude'] }}%2C{{ customer['latitude'] }}%2C{{ customer['longitude'] }}%2C{{ customer['latitude'] }}&layer=mapnik&marker={{ customer['latitude'] }}%2C{{ customer['longitude'] }}" width="100%" height="450" style="border: 1px solid black" allowfullscreen>
+                    </iframe>
+                </div>
+                <small>
+                    <a href="https://www.openstreetmap.org/?mlat={{ customer['latitude'] }}&mlon={{ customer['longitude'] }}#map=16/{{ customer['latitude'] }}/{{ customer['longitude'] }}" target="_blank">View Larger Map</a>
+                </small>
+            {% else %}
+                <p class="text-muted">No Location Added.</p>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Service Requests Section -->
+    <div class="card shadow mb-5">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-tasks"></i> Service History
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if customer['recent_service_requests'] %}
+                <ul class="list-group list-group-flush">
+                    {% for request in customer['recent_service_requests'] %}
+                        <li class="list-group-item py-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 border rounded bg-light shadow-sm">
+                                <div class="d-flex flex-column">
+                                    <span class="small text-muted">Service ID: #{{ request['id'] }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge text-white {{ 'bg-success' if request['service_status'] == 'REQUESTED' else 'bg-secondary' if request[service_status] == 'CLOSED' else 'bg-info' if request['service_status'] == 'ASSIGNED' else 'bg-danger' }}">{{ request['service_status'] }}</span>
+                                    <a href="{{ url_for('admin.service_request', id=request['id']) }}" class="btn btn-sm btn-light ms-2">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <p class="small text-muted mb-1">
+                                    <i class="fa-regular fa-calendar"></i> Start Date: <strong>{{ request['start_date'] }}</strong>
+                                    <i class="fa-regular fa-calendar"></i> Date Created: <strong>{{ request['date_created'] }}</strong>
+                                </p>
+                                <p class="small text-muted mb-1">
+                                    <i class="fa-solid fa-money-bill"></i> Total Cost: <strong>Rs. {{ request['total_cost'] }}</strong>
+                                </p>
+                                <p class="mt-2">
+                                    <strong>Remarks:</strong> <span class="text-muted">{{ request['remarks'] or "No remarks provided." }}</span>
+                                </p>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No service requests found.</p>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Reviews Given Section -->
+    <div class="card shadow mb-5">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-star"></i> Reviews Given
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if customer['recent_reviews'] %}
+                <ul class="list-group list-group-flush">
+                    {% for review in customer['recent_reviews'] %}
+                        <li class="list-group-item py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="text-left">
+                                <strong><i class="fas fa-user"></i> {{ review['customer_name'] }}</strong>
+                                <strong class="mx-2"> | </strong> 
+                                <strong><i class="fas fa-briefcase"></i> {{ review['professional_name'] }}</strong>
+                                </div>
+                                <span class="badge bg-primary text-white">
+                                    {{ review['value'] }} / 5 <i class="fas fa-star"></i>
+                                </span>
+                            </div>
+                            <p class="small text-muted">
+                                <i class="fas fa-calendar-alt"></i> Reviewed on <strong>{{ review['date_created'] }}</strong>
+                            </p>
+                            <p class="mt-2">{{ review['description'] }}</p>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No reviews available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "professional/base.html" %}
+{% block title %}Service Request{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "PROFESSIONAL" %}
+        <div class="container py-4 h-100">
+            <div class="row d-flex justify-content-center align-items-top h-100">
+                <div class="col-lg-8">
+                    <div class="card border-light shadow-lg mb-4">
+                        <div class="card-header bg-dark text-white text-center">
+                            <h4 class="mb-0">Service Request Receipt</h4>
+                            <span class="badge text-white {{ 'bg-success' if service_request['service_status'] == 'REQUESTED' else 'bg-secondary' if service_request['service_status'] == 'CLOSED' else 'bg-info' if service_request['service_status'] == 'ASSIGNED' else 'bg-danger' }}">{{ service_request['service_status'] }}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="text-muted text-center">Customer and Professional Details</h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="border rounded p-3 text-center">
+                                        <img src="{{ url_for('static', filename='uploads/profile/' ~ service_request['customer']['image']) }}" class="rounded-circle" alt="Customer Image" style="width: 100px; height: 100px; object-fit: cover">
+                                        <h5 class="mt-2">{{ service_request['customer']['name'] }}</h5>
+                                        <p>
+                                            <strong>Email:</strong> {{ service_request['customer']['email'] }}
+                                        </p>
+                                        <p>
+                                            <strong>Phone:</strong> {{ service_request['customer']['phone'] }}
+                                        </p>
+                                        <a class="btn btn-primary" href="{{ url_for('professional.customer', id =service_request['customer']['id']) }}">View</a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="border rounded p-3 text-center">
+                                        <img src="{{ url_for('static', filename='uploads/profile/' ~ service_request['professional']['image']) }}" class="rounded-circle" alt="Professional Image" style="width: 100px; height: 100px; object-fit: cover">
+                                        <h5 class="mt-2">{{ service_request['professional']['name'] }}</h5>
+                                        <p>
+                                            <strong>Email:</strong> {{ service_request['professional']['email'] }}
+                                        </p>
+                                        <p>
+                                            <strong>Phone:</strong> {{ service_request['professional']['phone'] }}
+                                        </p>
+                                        <a class="btn btn-primary" href="{{ url_for('professional.profile') }}">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <h5 class="text-muted text-center">Service Details</h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <img src="{{ url_for('static', filename='images/' ~ service_request['service']['image']) }}" alt="Service Image" class="img-fluid rounded" style="max-height: 150px; object-fit: cover">
+                                </div>
+                                <div class="col-md-8">
+                                    <h5>{{ service_request['service']['name'] }}</h5>
+                                    <p>
+                                        <strong>Price:</strong> &#8377; {{ service_request['professional']['service_price'] | indian_rupee_format }}
+                                    </p>
+                                    <p>
+                                        <strong>Description:</strong> {{ service_request['service']['description'] or 'N/A' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <h5 class="text-muted text-center">Request Summary</h5>
+                            <hr>
+                            <ul class="list-group mb-3">
+                                <li class="list-group-item">
+                                    <strong>Start Date:</strong> {{ service_request['start_date'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Total Days:</strong> {{ service_request['total_days'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Hours per Day:</strong> {{ service_request['hours_per_day'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Total Cost:</strong> &#8377; {{ service_request['total_cost'] | indian_rupee_format }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Date of Completion:</strong> {{ service_request['date_of_completion'] if service_request['date_of_completion'] else 'N/A' }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Remarks:</strong> {{ service_request['remarks'] or 'N/A' }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Date Created:</strong> {{ service_request['date_created'] }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Last Updated:</strong> {{ service_request['date_updated'] }}
+                                </li>
+                                {% if service_request['review'] %}
+                                <div class="card-header bg-warning text-dark mt-3">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-star"></i> Customer Review
+                                    </h5>
+                                </div>
+                                <li class="list-group-item py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong><i class="fas fa-user"></i> {{ service_request['customer']['name'] }}</strong>
+                                        <div class="col justify-content-between text-right">
+                                        <span class="badge bg-primary text-white">
+                                            {{ service_request['review']['value'] }} / 5 <i class="fas fa-star"></i>
+        
+                                        </span>
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted">
+                                        <i class="fas fa-calendar-alt"></i> Reviewed on <strong>{{ service_request['review']['date_created'] }}</strong>
+                                    </p>
+                                    <p class="mt-2">{{ service_request['review']['description'] }}</p>
+                                </li>
+                                {% endif %}
+                            </ul>
+                            <div class="text-center">
+                                <div class="d-flex justify-content-center">
+                                    <a href="{{ url_for('professional.dashboard') }}" class="btn btn-secondary mx-2">Back to Dashboard</a>
+                                    <button class="btn btn-primary mx-2" data-toggle="modal" data-target="#remarksModal">Add Remark</button>
+                                    {% if service_request['service_status'] == "REQUESTED" %}
+                                        <button type="submit" class="btn btn-info" data-toggle="modal" data-target="#statusConfirmationModal{{ service_request['id'] }}">Take Request</button>
+                                            <!-- Status Confirmation Modal -->
+                                            {% set modal_id = service_request['id'] %}
+                                            {% set message1 = "Take the Service Request?" %}
+                                            {% set message2 = "Are you sure you want to take this Service Request? This action cannot be undone." %}
+                                            {% set status = "ASSIGNED" %}
+                                            {% include 'modals/status_confirmation_modal.html' %}  
+                                        <button type="submit" class="btn btn-danger" data-toggle="modal" data-target="#rejectConfirmationModal{{ service_request['id'] }}">Reject Request</button>
+                                        <div class="modal fade" id="rejectConfirmationModal{{ service_request['id'] }}" tabindex="-1" role="dialog" aria-labelledby="rejectConfirmationModalLabel{{ service_request['id'] }}" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-dark text-white">
+                                                        <h5 class="modal-title" id="rejectConfirmationModalLabel{{ service_request['id'] }}">Take the Service Request?</h5>
+                                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body text-left text-dark">
+                                                        <p>Are you sure you want to take this Service Request? This action cannot be undone.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                        <form action="{{ url_for('professional.service_request', id=service_request.id, service_status='REJECTED') }}" method="post">
+                                                            <button type="submit" class="btn btn-danger">Reject Request</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% elif service_request['service_status'] == "ASSIGNED" %}
+                                        <button type="submit" class="btn btn-secondary" data-toggle="modal" data-target="#statusConfirmationModal{{ service_request['id'] }}">Finish Request</button>
+                                            <!-- Status Confirmation Modal -->
+                                            {% set modal_id = service_request['id'] %}
+                                            {% set message1 = "Finish the Service Request?" %}
+                                            {% set message2 = "Are you sure you want to reject this Service Request? This action cannot be undone." %}
+                                            {% set status = "CLOSED" %}
+                                            {% include 'modals/status_confirmation_modal.html' %}  
+                                    {% else %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal for Adding Remark -->
+            {% set action = url_for('professional.service_request', id=service_request['id']) %}
+            {% include 'modals/add_remark_modal.html' %} 
+        </div>
+    {% endif %}
+{% endblock %}

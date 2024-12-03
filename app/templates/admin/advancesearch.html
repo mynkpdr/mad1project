@@ -1,0 +1,321 @@
+{% extends "admin/base.html" %}
+{% block title %}Advanced Search{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .result-card {
+            transition: transform 0.2s;
+        }
+        .result-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <div class="container-fluid my-4">
+        <h1 class="mb-4">Search Results for "<span id="search-query">{{q}}</span>" in {{t}}</h1>
+        {% if result %}
+        {% if result['pagination'] %}
+
+        
+        {% if result['pagination']['current_page'] == 1 %}
+        Showing 1 to {{result['pagination']['per_page'] * result['pagination']['current_page'] if result['pagination']['next_num'] else result['pagination']['total']}} of {{result['pagination']['total']}} entries
+        {% else %}
+        Showing {{result['pagination']['per_page'] * result['pagination']['prev_num']}} to {{result['pagination']['per_page'] * result['pagination']['current_page'] if result['pagination']['next_num'] else result['pagination']['total']}} of {{result['pagination']['total']}} entries
+        {% endif %}
+        
+        
+            {% if t == "professional" %}
+            <br>
+            <form method="GET" class="d-inline" id="pagination-form">
+                <!-- Pagination Control -->
+                <label for="per-page" class="mr-2">Per page:</label>
+                <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;">
+                    <option value="5" {% if result['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if result['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if result['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if result['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                </select>
+            
+                <!-- Sort By Control -->
+                <label for="sort-by" class="ml-3 mr-2">Sort by:</label>
+                <select name="sort_by" id="sort-by" class="form-control d-inline" style="width: auto;">
+                    <option value="name" {% if result['sort_by'] == 'name' %}selected{% endif %}>Name</option>
+                    <option value="date_created" {% if result['sort_by'] == 'date_created' %}selected{% endif %}>Date Created</option>
+                </select>
+            
+                <!-- Direction Control -->
+                <label for="direction" class="ml-3 mr-2">Direction:</label>
+                <select name="direction" id="direction" class="form-control d-inline" style="width: auto;">
+                    <option value="asc" {% if result['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                    <option value="desc" {% if result['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                </select>
+            
+                <!-- Submit Button -->
+                <button type="button" class="btn btn-primary ml-3" onclick="submitWithParams()">Submit</button>
+            </form>
+            
+            <div class="row">
+            {% for professional in result['data'] %}
+            <div class="col-md-4 mb-4 text-center">
+                <div class="card result-card align-items-center">
+                    <img src="{{ url_for('static', filename='uploads/profile/' ~ professional['image']) }}" class="rounded-circle" alt="Profile Image" style="width: 100px; height: 100px; object-fit: cover" />
+                    <div class="card-body">
+                        <h5 class="result-title">{{professional['name']}}</h5>
+                        <b>{{professional['service_name']}}</b>
+                        <p class="card-text">{{professional['about']}}</p>
+                        <a href="{{url_for('admin.professional', id=professional['id'])}}" class="btn btn-primary">View</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+            {% elif t == "customer" %}
+            <br>
+            <form method="GET" class="d-inline" id="pagination-form">
+                <!-- Pagination Control -->
+                <label for="per-page" class="mr-2">Per page:</label>
+                <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;">
+                    <option value="5" {% if result['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if result['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if result['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if result['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                </select>
+            
+                <!-- Sort By Control -->
+                <label for="sort-by" class="ml-3 mr-2">Sort by:</label>
+                <select name="sort_by" id="sort-by" class="form-control d-inline" style="width: auto;">
+                    <option value="name" {% if result['sort_by'] == 'name' %}selected{% endif %}>Name</option>
+                    <option value="date_created" {% if result['sort_by'] == 'date_created' %}selected{% endif %}>Date Created</option>
+                </select>
+            
+                <!-- Direction Control -->
+                <label for="direction" class="ml-3 mr-2">Direction:</label>
+                <select name="direction" id="direction" class="form-control d-inline" style="width: auto;">
+                    <option value="asc" {% if result['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                    <option value="desc" {% if result['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                </select>
+            
+                <!-- Submit Button -->
+                <button type="button" class="btn btn-primary ml-3" onclick="submitWithParams()">Submit</button>
+            </form>
+            
+
+            <div class="row">
+            {% for customer in result['data'] %}
+            <div class="col-md-4 mb-4 text-center">
+                <div class="card result-card align-items-center">
+                    <img src="{{ url_for('static', filename='uploads/profile/' ~ customer['image']) }}" class="rounded-circle" alt="Profile Image" style="width: 100px; height: 100px; object-fit: cover" />
+                    <div class="card-body">
+                        <h5 class="result-title">{{customer['name']}}</h5>
+                        <p class="card-text">{{customer['about']}}</p>
+                        <a href="{{url_for('admin.customer', id=customer['id'])}}" class="btn btn-primary">View</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+            {% elif t == "service" %}
+            <br>
+            <form method="GET" class="d-inline" id="pagination-form">
+                <!-- Pagination Control -->
+                <label for="per-page" class="mr-2">Per page:</label>
+                <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;">
+                    <option value="5" {% if result['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if result['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if result['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if result['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                </select>
+            
+                <!-- Sort By Control -->
+                <label for="sort-by" class="ml-3 mr-2">Sort by:</label>
+                <select name="sort_by" id="sort-by" class="form-control d-inline" style="width: auto;">
+                    <option value="name" {% if result['sort_by'] == 'name' %}selected{% endif %}>Name</option>
+                    <option value="price" {% if result['sort_by'] == 'price' %}selected{% endif %}>Price</option>
+                    <option value="category" {% if result['sort_by'] == 'category' %}selected{% endif %}>Category</option>
+                    <option value="date_created" {% if result['sort_by'] == 'date_created' %}selected{% endif %}>Date Created</option>
+                </select>
+            
+                <!-- Direction Control -->
+                <label for="direction" class="ml-3 mr-2">Direction:</label>
+                <select name="direction" id="direction" class="form-control d-inline" style="width: auto;">
+                    <option value="asc" {% if result['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                    <option value="desc" {% if result['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                </select>
+            
+                <!-- Submit Button -->
+                <button type="button" class="btn btn-primary ml-3" onclick="submitWithParams()">Submit</button>
+            </form>
+            
+
+            <div class="row">
+                {% for service in result['data'] %}
+                <div class="col-md-4 mb-4">
+                    <div class="card result-card align-items-center">
+                        <div class="card-body text-center">
+                            <!-- Service Image -->
+                            <img src="{{ url_for('static', filename='images/' ~ service['image']) }}" 
+                                 alt="Service Image" 
+                                 style="width: 100px; height: 100px; object-fit: cover;" />
+            
+                            <!-- Service Name -->
+                            <h5 class="text-dark font-weight-bold mb-1">{{ service['name'] }}</h5>
+            
+                            <!-- Category and Price -->
+                            <p class="text-muted mb-1">{{ service['category'] }}</p>
+                            <p class="text-primary font-weight-bold">₹ {{ service['price'] | indian_rupee_format }}</p>
+            
+                            <!-- View Button -->
+                            <a href="{{ url_for('admin.service', id=service['id']) }}" class="btn btn-primary mt-2">View</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% elif t == "service_request" %}
+
+            <br>
+            <form method="GET" class="d-inline" id="pagination-form">
+                <!-- Pagination Control -->
+                <label for="per-page" class="mr-2">Per page:</label>
+                <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;">
+                    <option value="5" {% if result['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if result['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if result['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if result['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                </select>
+            
+                <!-- Sort By Control -->
+                <label for="sort-by" class="ml-3 mr-2">Sort by:</label>
+                <select name="sort_by" id="sort-by" class="form-control d-inline" style="width: auto;">
+                    <option value="service_name" {% if result['sort_by'] == 'service_name' %}selected{% endif %}>Service Name</option>
+                    <option value="customer_name" {% if result['sort_by'] == 'customer_name' %}selected{% endif %}>Customer Name</option>
+                    <option value="professional_name" {% if result['sort_by'] == 'professional_name' %}selected{% endif %}>Professional Name</option>
+                    <option value="service_status" {% if result['sort_by'] == 'service_status' %}selected{% endif %}>Service Status</option>
+                    <option value="total_cost" {% if result['sort_by'] == 'total_cost' %}selected{% endif %}>Total Cost</option>
+                    <option value="start_date" {% if result['sort_by'] == 'start_date' %}selected{% endif %}>Start Date</option>
+                    <option value="date_created" {% if result['sort_by'] == 'date_created' %}selected{% endif %}>Date Created</option>
+                </select>
+            
+                <!-- Direction Control -->
+                <label for="direction" class="ml-3 mr-2">Direction:</label>
+                <select name="direction" id="direction" class="form-control d-inline" style="width: auto;">
+                    <option value="asc" {% if result['direction'] == 'asc' %}selected{% endif %}>Ascending</option>
+                    <option value="desc" {% if result['direction'] == 'desc' %}selected{% endif %}>Descending</option>
+                </select>
+            
+
+                    <!-- Date Range Control -->
+    <label for="start-date" class="ml-3 mr-2">Start Date:</label>
+    <input type="date" name="start_date" id="start-date" class="form-control d-inline" style="width: auto;" value="{{ request.args.get('start_date', '') }}">
+
+    <label for="end-date" class="ml-3 mr-2">End Date:</label>
+    <input type="date" name="end_date" id="end-date" class="form-control d-inline" style="width: auto;" value="{{ request.args.get('end_date', '') }}">
+
+                <!-- Submit Button -->
+                <button type="button" class="btn btn-primary ml-3" onclick="submitServiceRequestWithParams()">Submit</button>
+            </form>
+
+
+            <div class="row">
+                {% for service_request in result['data'] %}
+                <div class="col-md-4 mb-4">
+                    <div class="card result-card align-items-center">
+                        <div class="card-body text-center">
+                            <h5 class="result-title text-muted mb-1"><strong>By:</strong> {{ service_request['customer'] }}</h5>
+                            <h5 class="result-title text-muted mb-3"><strong>To:</strong> {{ service_request['professional'] }}</h5>
+                            <p class="card-text font-weight-bold">{{ service_request['service'] }}</p>
+                            
+                            <!-- Status Badge -->
+                            <span class="badge rounded-pill py-2 px-3 mb-2 text-white 
+                                {{ 'bg-success' if service_request['status'] == 'Requested' else 
+                                   'bg-secondary' if service_request['status'] == 'Closed' else 
+                                   'bg-info' if service_request['status'] == 'Assigned' else 
+                                   'bg-danger' }}">
+                                {{ service_request['status'] }}
+                            </span>
+                            
+                            <p class="card-text h5 text-primary font-weight-bold">₹ {{ service_request['total_cost'] | indian_rupee_format }}</p>
+                            <p class="card-text text-secondary small">Date Created: {{ service_request['date_created'] }}</p>
+                            <p class="card-text text-secondary small">Start From: {{ service_request['start_date'] }}</p>
+                            
+                            <!-- View Button -->
+                            <a href="{{ url_for('admin.service_request', id=service_request['id']) }}" class="btn btn-primary mt-2">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if result['pagination']['pages'] > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if result['pagination']['prev_num'] %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin.advancesearch', page=result['pagination']['prev_num'], sort_by=result['sort_by'], direction=result['direction'], per_page=result['pagination']['per_page'], t=t, q=q, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% for page_num in range(1, result['pagination']['pages'] + 1) %}
+                        <li class="page-item {% if page_num == result.page %}active{% endif %}">
+                            <a class="page-link {{ 'bg-secondary text-white' if result['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.advancesearch', page=page_num, sort_by=result['sort_by'], direction=result['direction'], per_page=result['pagination']['per_page'], t=t, q=q, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}">{{ page_num }}</a>
+                        </li>
+                    {% endfor %}
+                    {% if result['pagination']['next_num'] %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin.service_requests', page=result['pagination']['next_num'], sort_by=result['sort_by'], direction=result['direction'], per_page=result['pagination']['per_page'], start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+    </div>
+    <script>
+        function submitWithParams() {
+            const form = document.getElementById('pagination-form');
+            const url = new URL(window.location.href);
+        
+            // Set or update parameters based on selected values
+            url.searchParams.set("per_page", form.per_page.value);
+            url.searchParams.set("sort_by", form.sort_by.value);
+            url.searchParams.set("direction", form.direction.value);
+            url.searchParams.set("page", "1");
+                        // Redirect with the updated URL
+                        window.location.href = url.toString();
+        }
+        function submitServiceRequestWithParams() {
+            const form = document.getElementById('pagination-form');
+            const url = new URL(window.location.href);
+        
+            // Set or update parameters based on selected values
+            url.searchParams.set("per_page", form.per_page.value);
+            url.searchParams.set("sort_by", form.sort_by.value);
+            url.searchParams.set("direction", form.direction.value);
+            url.searchParams.set("page", "1");
+
+    // Set or update the date range parameters
+    const startDate = form.start_date.value;
+    const endDate = form.end_date.value;
+
+    if (startDate) url.searchParams.set("start_date", startDate);
+    else url.searchParams.delete("start_date");
+
+    if (endDate) url.searchParams.set("end_date", endDate);
+    else url.searchParams.delete("end_date");
+            // Redirect with the updated URL
+            window.location.href = url.toString();
+        }
+    </script>
+    {% endif %}
+{% endblock %}

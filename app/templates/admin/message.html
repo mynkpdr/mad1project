@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+{% block title %}Message{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        {% if message %}
+            <div class="container mt-5">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Contact Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">Contact Information</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong><i class="fas fa-user"></i> Name:</strong> {{ message['name'] }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong><i class="fas fa-envelope"></i> Email:</strong> {{ message['email'] }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong><i class="fas fa-phone"></i> Phone:</strong> {{ message['phone'] }}
+                            </li>
+                            <li class="list-group-item">
+                                <strong><i class="fas fa-comments"></i> Message:</strong>
+                                <p class="mb-0">{{ message['message'] }}</p>
+                            </li>
+                            <li class="list-group-item">
+                                <strong><i class="fas fa-calendar-alt"></i> Date Created:</strong> {{ message['date_created'] }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{request.referrer or '/'}}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ message['id'] }}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+                                            <!-- Confirmation Modal -->
+            <div class="modal fade" id="confirmationModal{{ message['id'] }}" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel{{ message['id'] }}" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-dark text-white">
+                            <h5 class="modal-title" id="confirmationModalLabel{{ message['id'] }}">Confirm Deletion</h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body text-left">
+                            <p>Are you sure you want to delete the message "{{ message['name'] }}"? This action cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <form action="{{ url_for('admin.message', id=message['id']) }}" method="POST">
+                                <input type="hidden" name="_method" value="DELETE" />
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            Message not found
+        {% endif %}
+    {% endif %}
+{% endblock %}

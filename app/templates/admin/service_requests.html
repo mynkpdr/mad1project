@@ -1,0 +1,536 @@
+{% extends "admin/base.html" %}
+{% block title %}Service Requests{% endblock %}
+{% block main %}
+    {% if current_user.role.name == "ADMIN" %}
+        <h1 class="mb-4">Service Requests</h1>
+        <!-- SERVICE REQUESTS -->
+        <div class="container-fluid mt-5">
+            {% if service_requests %}
+            <div class="row mb-4 align-items-center">
+                
+                <div class="col">
+                    <h2 class="mb-0">
+                        Service Requests
+                        <button type="button" class="btn btn-primary btn-sm rounded-circle" data-toggle="modal" data-target="#addServiceRequestModal">
+                            <i class="fas fa-plus-circle" data-toggle="modal" data-target="#addServiceRequestModal"></i>
+                        </button>
+                    </h2>
+                    <!-- Modal Structure -->
+                    <div class="modal fade" id="addServiceRequestModal" tabindex="-1" role="dialog" aria-labelledby="addServiceRequestModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="addServiceRequestModalLabel">Add Service Request</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="{{ url_for('admin.service_requests') }}">
+                                        {{ form.hidden_tag() }} <!-- CSRF token -->
+                                        <div class="form-group">
+                                            {{ form.category_id.label(class="form-label", for="categorySelect") }}
+                                            <select id="categorySelect" class="form-control" name="category_id" required>
+                                                <option value="" disabled selected>-- Select a category --</option>
+                                                {% for id, name in form.category_id.choices %}<option value="{{ id }}" name="category_id">{{ name }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.service_id.label(class="form-label", for='serviceSelect') }}
+                                            <select id="serviceSelect" class="form-control" name="service_id" required>
+                                                <option value="">-- Select a service --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.customer_id.label(class="form-label") }}
+                                            {{ form.customer_id(class="form-control") }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.professional_id.label(class="form-label") }}
+                                            {{ form.professional_id(class="form-control", onchange="updateServicePrice()") }}
+                                            <input type="hidden" id="professional_service_price" name="professional_service_price" value="{{ form.professional_id.choices }}" />
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.start_date.label(class="form-label") }}
+                                            {{ form.start_date(class="form-control") }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.total_days.label(class="form-label") }}
+                                            {{ form.total_days(class="form-control", min=1) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.hours_per_day.label(class="form-label") }}
+                                            {{ form.hours_per_day(class="form-control", min=1, max=24) }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.remarks.label(class="form-label") }}
+                                            {{ form.remarks(class="form-control", rows=3, placeholder="Enter any remarks or special instructions...") }}
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Estimated Cost:</label>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <p id="estimated_cost_display" class="h5 text-primary mb-0">Rs. 0/-</p>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="calculateCost()">
+                                                    <i class="fas fa-calculator"></i> Calculate
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="cost" id="cost" value="0">
+                                        </div>
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                        {{ form.submit(class="btn btn-primary") }}
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        // Set today's date as the minimum date for the start date input
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const today = new Date().toISOString().split('T')[0];
+                            document.getElementById('start_date').setAttribute('min', today);
+
+                            const selectedOption = document.getElementById('professional_id').selectedOptions[0];
+                            const servicePrice = selectedOption ? selectedOption.getAttribute('data-price') : 0;
+                            document.getElementById('professional_service_price').value = servicePrice;
+                        });
+
+                        function updateServicePrice() {
+                            const selectedOption = document.getElementById('professional_id').selectedOptions[0];
+                            const servicePrice = selectedOption ? selectedOption.getAttribute('data-price') : 0;
+                            document.getElementById('professional_service_price').value = servicePrice;
+                        }
+
+                        function calculateCost() {
+                            const servicePrice = parseInt(document.getElementById('professional_service_price').value);
+                            const totalDays = parseInt(document.getElementById('total_days').value) || 0;
+                            const hoursPerDay = parseInt(document.getElementById('hours_per_day').value) || 0;
+
+                            const estimatedCost = servicePrice * totalDays * hoursPerDay;
+                            document.getElementById('estimated_cost_display').innerText = `Rs. ${estimatedCost}/-`;
+                            document.getElementById('cost').value = estimatedCost;
+                        }
+                    </script>
+                    <script>
+                        // Listen for changes on the category dropdown
+                        document.getElementById("categorySelect").addEventListener("change", function() {
+                            var categoryId = this.value;
+
+                            // Make an AJAX request to get services for the selected category
+                            if (categoryId) {
+                                fetch("/api/category/" + categoryId + "/services")
+                                    .then((response) => response.json())
+                                    .then((data) => {
+                                        // Clear the current options in the service dropdown
+                                        var serviceSelect = document.getElementById("serviceSelect");
+                                        serviceSelect.innerHTML = '<option value="">-- Select a service --</option>';
+
+                                        // Add the new services from the response
+                                        data['data'].forEach((service) => {
+                                            var option = document.createElement("option");
+                                            option.value = service.id;
+                                            option.textContent = service.name + " (Price: ₹" + service.price + ")";
+                                            option.setAttribute("data-price", service.price); // optional, if you want to access the price later
+                                            serviceSelect.appendChild(option);
+                                        });
+                                    })
+                                    .catch((error) => {
+                                        console.error("Error fetching services:", error);
+                                    });
+                            } else {
+                                // If no category is selected, clear the service dropdown
+                                document.getElementById("serviceSelect").innerHTML = '<option value="">-- Select a service --</option>';
+                            }
+                        });
+                    </script>
+                </div>
+                <form method="GET" action="{{ url_for('admin.service_requests') }}" class="d-inline mr-3">
+                    <!-- Button for REQUESTED status -->
+                    <button type="submit" name="status" value="{% if request.args.get('status') == 'REQUESTED' %}""{% else %}REQUESTED{% endif %}" class="btn {{'btn-success' if request.args.get('status') == 'REQUESTED' else 'btn-dark'}}">
+                        REQUESTED
+                    </button>
+                    
+                    <!-- Button for ASSIGNED status -->
+                    <button type="submit" name="status" value="{% if request.args.get('status') == 'ASSIGNED' %}""{% else %}ASSIGNED{% endif %}" class="btn {{'btn-info' if request.args.get('status') == 'ASSIGNED' else 'btn-dark'}}">
+                        ASSIGNED
+                    </button>
+                    
+                    <!-- Button for CLOSED status -->
+                    <button type="submit" name="status" value="{% if request.args.get('status') == 'CLOSED' %}""{% else %}CLOSED{% endif %}" class="btn {{'btn-secondary' if request.args.get('status') == 'CLOSED' else 'btn-dark'}}">
+                        CLOSED
+                    </button>
+                    
+                    <!-- Button for REJECTED status -->
+                    <button type="submit" name="status" value="{% if request.args.get('status') == 'REJECTED' %}""{% else %}REJECTED{% endif %}" class="btn {{'btn-danger' if request.args.get('status') == 'REJECTED' else 'btn-dark'}}">
+                        REJECTED
+                    </button>
+                
+                    
+                    {% for key, value in request.args.items() %}
+                        {% if key != 'status' and key !='page' %}  <!-- Exclude 'status' and 'page' to avoid overwriting -->
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                </form>
+                
+                <div class="col-auto ml-auto">
+                    <form method="GET" class="d-inline mr-3">
+                        <label for="per-page" class="mr-2">Per page:</label>
+                        <select name="per_page" id="per-page" class="form-control d-inline" style="width: auto;" onchange="this.form.submit()">
+                            <option value="5" {% if service_requests['pagination']['per_page'] == 5 %}selected{% endif %}>5</option>
+                            <option value="10" {% if service_requests['pagination']['per_page'] == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if service_requests['pagination']['per_page'] == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if service_requests['pagination']['per_page'] == 50 %}selected{% endif %}>50</option>
+                        </select>
+                        {% for key, value in request.args.items() %}
+                        {% if key != 'per_page' %}  <!-- Exclude per_page to avoid duplicates -->
+                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                        {% endif %}
+                    {% endfor %}
+                    </form>
+                    <form class="d-inline-flex" method="GET">
+                        <input type="text" oninput="debounceSearch()" id="search-query" name="q" class="form-control mr-2" placeholder="Search for Service Requests..." aria-label="Search" />
+                        <button class="btn btn-light" disabled>
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                
+            </div>
+
+                <table id="search-table" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='id', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'id' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='id', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'id' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+                                ID
+                                {% if service_requests['sort_by'] == 'id' %}
+                                    {% if service_requests['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            
+                            </th>
+                            <th>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='service_name', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'service_name' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='service_name', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'service_name' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+                                Service
+                                {% if service_requests['sort_by'] == 'service_name' %}
+                                    {% if service_requests['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            
+                            </th>
+                            <th>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='customer_name', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'customer_name' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='customer_name', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'customer_name' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+                                Customer
+                                {% if service_requests['sort_by'] == 'customer_name' %}
+                                    {% if service_requests['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            
+                            </th>
+                            <th>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='professional_name', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'professional_name' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='professional_name', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'professional_name' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+                                Professional
+                                {% if service_requests['sort_by'] == 'professional_name' %}
+                                    {% if service_requests['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            
+                            </th>
+                            <th>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='total_cost', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'total_cost' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='total_cost', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'total_cost' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+
+                                    Total Cost
+                                    {% if service_requests['sort_by'] == 'total_cost' %}
+                                        {% if service_requests['direction'] == 'asc' %}
+                                            ↑
+                                        {% else %}
+                                            ↓
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='date_created', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'date_created' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='date_created', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'date_created' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+                                Date Created
+                                {% if service_requests['sort_by'] == 'date_created' %}
+                                    {% if service_requests['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            
+                            </th>
+                            <th class = 'text-center'>
+                                {% if service_requests['status'] %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='service_status', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'service_status' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page'], 
+                                                    status=service_requests['status']) }}">
+                            {% else %}
+                                <a href="{{ url_for('admin.service_requests', 
+                                                    sort_by='service_status', 
+                                                    direction='asc' if service_requests['direction'] == 'desc' or service_requests['sort_by'] != 'service_status' else 'desc', 
+                                                    per_page=service_requests['pagination']['per_page']) }}">
+                            {% endif %}
+                                Status
+                                {% if service_requests['sort_by'] == 'service_status' %}
+                                    {% if service_requests['direction'] == 'asc' %}
+                                        ↑
+                                    {% else %}
+                                        ↓
+                                    {% endif %}
+                                {% endif %}
+                            </a>
+                            
+                            </th>
+                            <th>
+                                <a href="#">Action</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <div id="results"></div>
+                        {% for service_request in service_requests['data'] %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('admin.service_request', id=service_request['id']) }}">{{ service_request['id'] }}</a>
+                                </td>
+                                <td>{{ service_request['service']['name'] }}</td>
+                                <td>{{ service_request['customer']['name'] }}</td>
+                                <td>{{ service_request['professional']['name'] }}</td>
+                                <td>₹{{ service_request['total_cost'] | indian_rupee_format }}</td>
+                                <td>{{ service_request['date_created'] }}</td>
+                                <td class="text-white text-center {{ 'bg-success' if service_request['service_status'] == 'REQUESTED' else 'bg-secondary' if service_request['service_status'] == 'CLOSED' else 'bg-info' if service_request['service_status'] == 'ASSIGNED' else 'bg-danger'}}">{{ service_request['service_status'] }}</td>
+                                <td>
+                                    <div class="row justify-content-center">
+                                        <a href="{{ url_for('admin.service_request', id=service_request['id']) }}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                        <a href="{{ url_for('admin.service_request', id=service_request['id']) }}?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-pencil-alt"></i></a>
+                                        <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal{{ service_request['id'] }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = service_request['id'] %}
+                                            {% set message = "Are you sure you want to delete the service request? This action cannot be undone." %}
+                                            {% set action = url_for('admin.service_request', id=modal_id) %}
+                                            {% include 'modals/confirmation_modal.html' %}
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if service_requests['pagination']['pages'] > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if service_requests['pagination']['prev_num'] %}
+                                <li class="page-item">
+                                    {% if service_requests['status'] %}
+                                    <a class="page-link" href="{{ url_for('admin.service_requests', page=service_requests['pagination']['prev_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page'], status=service_requests['status']) }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('admin.service_requests', page=service_requests['pagination']['prev_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page']) }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                    {% endif %}
+                                        
+                                </li>
+                            {% endif %}
+                            {% for page_num in range(1, service_requests['pagination']['pages'] + 1) %}
+                                <li class="page-item {% if page_num == service_requests.page %}active{% endif %}">
+                                    {% if service_requests['status'] %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if service_requests['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.service_requests', page=page_num, sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page'], status=service_requests['status']) }}">{{ page_num }}</a>
+                                    {% else %}
+                                    <a class="page-link {{ 'bg-secondary text-white' if service_requests['pagination']['current_page'] == page_num else '' }}" href="{{ url_for('admin.service_requests', page=page_num, sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page']) }}">{{ page_num }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                            {% if service_requests['pagination']['next_num'] %}
+                                <li class="page-item">
+                                    {% if service_requests['status'] %}
+                                    <a class="page-link" href="{{ url_for('admin.service_requests', page=service_requests['pagination']['next_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page'], status=service_requests['status']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% else %}
+                                    <a class="page-link" href="{{ url_for('admin.service_requests', page=service_requests['pagination']['next_num'], sort_by=service_requests['sort_by'], direction=service_requests['direction'], per_page=service_requests['pagination']['per_page']) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+                <script>
+                    // Store the original table content
+                    const originalTableHTML = document.querySelector("#search-table tbody").innerHTML;
+                    
+                    // JavaScript function to perform asynchronous search
+                    async function search() {
+                        const query = document.getElementById("search-query").value;
+                
+                        // Check if the query is empty
+                        if (query.trim() === "") {
+                            // Restore the original table content
+                            document.querySelector("#search-table tbody").innerHTML = originalTableHTML;
+                            document.getElementById("results").innerHTML = ""; // Clear the results message
+                            return;
+                        }
+                
+                        // Perform AJAX request to the search API
+                        const response = await fetch(`/api/search?q=${query}&t=service_request&direction={{service_requests['direction']}}&sort_by={{service_requests['sort_by']}}&per_page={{service_requests['pagination']['per_page']}}&page={{service_requests['pagination']['current_page']}}&status={{service_requests['status']}}`);
+                        const data = await response.json();
+                
+                        // Clear previous results in the results div
+                        const resultsDiv = document.getElementById("results");
+                        resultsDiv.innerHTML = ""; 
+                        
+                        
+                        // Clear existing table rows before appending new results
+                        const existingTableBody = document.querySelector("#search-table tbody");
+                        existingTableBody.innerHTML = ""; 
+                
+                        if (data["data"].length === 0) {
+                            resultsDiv.innerHTML = `<p>No results found for "${query}"</p>`;
+                        } else {
+                            resultsDiv.innerHTML = `<p>${data["data"].length} Search results for "${query}"</p>`;
+                            
+                            // Append service_request results to the existing table
+                            data["data"].forEach((service_request) => {
+                                let statusClass = '';
+                                switch (service_request.status) {
+                                    case 'Requested':
+                                        statusClass = 'bg-success';
+                                        break;
+                                    case 'Assigned':
+                                        statusClass = 'bg-info';
+                                        break;
+                                    case 'Closed':
+                                        statusClass = 'bg-secondary';
+                                        break;
+                                    case 'Rejected':
+                                        statusClass = 'bg-danger';
+                                        break;
+                                    default:
+                                        statusClass = ''; // Default class if needed
+                                }
+        
+                                const newRow = document.createElement("tr");
+                                newRow.innerHTML = `
+                                    <td><a href="/admin/service_request/${service_request.id}">${service_request.id}</a></td>
+                                    <td>${service_request.service}</td>
+                                    <td>${service_request.customer}</td>
+                                    <td>${service_request.professional}</td>
+                                    <td>₹${service_request.total_cost.toLocaleString('en-IN')}</td>
+                                    <td>${service_request.date_created}</td>
+                                    <td class="${statusClass} text-white text-center">${service_request.status.toUpperCase()}</td>
+                                    <td>
+                                        <div class="row justify-content-center">
+                                            <a href="/admin/service_request/${service_request.id}" class="btn btn-primary btn-sm"><i class="fa-regular fa-eye"></i></a>
+                                            <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#confirmationModal${service_request.id}">
+                                                    <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                `;
+                                existingTableBody.appendChild(newRow); // Append the new row to the existing table
+                            });
+                        }
+                    }
+                
+                    // Debounce function to delay the search
+                    let timeout = null;
+                
+                    function debounceSearch() {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(search, 500); // Delay of 500ms before triggering search
+                    }
+                </script>
+            {% else %}
+                No Service Requests found
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

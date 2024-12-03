@@ -1,0 +1,312 @@
+{% extends "customer/base.html" %}
+{% block title %}Nearby{% endblock %}
+{% block main %}
+
+<!-- Include Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+    #map {
+        height: 500px;
+        width: 100%;
+        border-radius: 8px;
+        border: 2px solid #eaeaea;
+        overflow: hidden;
+    }
+</style>
+<div class="container my-5">
+    <form id="distanceForm" method="POST" class="p-4 bg-white shadow rounded">
+        <h4 class="mb-3 text-primary">Find Professionals</h4>
+    
+        <div class="form-group">
+            <label for="service" class="font-weight-bold">Select Service:</label>
+            <select id="service_id" name="service_id" class="form-control">
+                {% for service in services %}
+                <option value="{{ service['id'] }}">{{ service['name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="search_type" class="font-weight-bold">Search By:</label>
+            <select id="search_type" name="search_type" class="form-control">
+                <option value="distance">Distance</option>
+                <option value="pincode">Pincode</option>
+            </select>
+        </div>
+    
+        <div class="form-group" id="distanceInputGroup">
+            <label for="distance_km" class="font-weight-bold">Enter Distance (in km):</label>
+            <input type="number" id="distance_km" name="distance_km" class="form-control" placeholder="e.g., 10" required>
+        </div>
+    
+        <div class="form-group" id="pincodeInputGroup" style="display: none;">
+            <label for="pincode" class="font-weight-bold">Search by Pincode:</label>
+            <input id="pincode" name="pincode" class="form-control" type="number" placeholder="Enter Pincode">
+        </div>
+    
+        <!-- Distance Submit Button -->
+        <div class="form-group text-center" id="distanceSubmitGroup">
+            <button type="button" class="btn btn-primary" id="distanceBtn">Find Professionals by Distance</button>
+        </div>
+
+        <!-- Pincode Submit Button -->
+        <div class="form-group text-center" id="pincodeSubmitGroup" style="display: none;">
+            <button type="button" class="btn btn-primary" id="pincodeBtn">Find Professionals by Pincode</button>
+        </div>
+
+    </form>
+    
+    <p id="professionalsCount" class="text-center font-weight-bold mt-4"></p>
+
+    <div id="map" class="mt-3"></div>
+</div>
+
+<!-- Include Leaflet and Bootstrap JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<!-- Include Leaflet marker cluster plugin -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.0/dist/leaflet.markercluster.js"></script>
+
+<script>
+    var map = L.map('map').setView(['{{current_user.latitude}}', '{{current_user.longitude}}'], 14); // Default view
+    var myIcon = L.icon({
+        iconUrl: '/static/images/marker.png',
+        iconSize: [40, 40],
+    });
+    
+    var currentUserMarker = L.marker(['{{current_user.latitude}}', '{{current_user.longitude}}'], {icon: myIcon}).addTo(map);
+    currentUserMarker.bindPopup(`<center><h5><span class="badge badge-primary">You</span></h5></center>`, {
+        offset: L.point(0, 0)
+    }).openPopup();
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Initialize a marker cluster group
+    var markersCluster = L.markerClusterGroup();
+    markersCluster.addLayer(currentUserMarker);
+
+    var circlesLayer = L.layerGroup().addTo(map);
+    
+    // Handle search type change (distance or pincode)
+    document.getElementById('search_type').addEventListener('change', function() {
+        var searchType = this.value;
+        if (searchType === 'distance') {
+            document.getElementById('distanceInputGroup').style.display = 'block';
+            document.getElementById('pincodeInputGroup').style.display = 'none';
+            document.getElementById('distanceSubmitGroup').style.display = 'block';
+            document.getElementById('pincodeSubmitGroup').style.display = 'none';
+        } else {
+            document.getElementById('distanceInputGroup').style.display = 'none';
+            document.getElementById('pincodeInputGroup').style.display = 'block';
+            document.getElementById('distanceSubmitGroup').style.display = 'none';
+            document.getElementById('pincodeSubmitGroup').style.display = 'block';
+        }
+    });
+
+
+    // Handle form submission
+    document.getElementById('distanceBtn').addEventListener('click', function() {
+
+        var searchType = document.getElementById('search_type').value;
+        var distance_km = parseInt(document.getElementById('distance_km').value);
+        var service_id = document.getElementById('service_id').value;
+        data = {
+                distance_km: distance_km,
+                service_id: service_id
+            };
+
+        // Clear existing markers from the map (but not the base tile layer)
+        markersCluster.clearLayers();
+        circlesLayer.clearLayers(); // Clear previous circles
+
+        markersCluster.addLayer(currentUserMarker);
+
+        // Send POST request to the backend
+        fetch(`/api/service/${service_id}/nearby_professionals`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(responseData => {
+            const professionals = responseData.data;
+            const distanceText = isNaN(distance_km) ? ' under 0 KM' : ` under ${distance_km} KM`;
+            const professionalsCount = professionals.length > 0 
+                ? `${professionals.length} professionals found${distanceText}` 
+                : `0 professionals found${distanceText}`;
+
+            document.getElementById('professionalsCount').textContent = professionalsCount;
+
+            // Loop through professionals and add them to the marker cluster
+            professionals.forEach(function(professional) {
+                var marker = L.marker([professional.latitude, professional.longitude]).addTo(markersCluster);
+
+                L.circle([professional.latitude, professional.longitude], {
+                    color: 'blue',
+                    fillColor: '#add8e6',
+                    fillOpacity: 0.2,
+                    radius: 100 // Adjust radius as needed
+                }).addTo(circlesLayer);
+
+                var starRatingHtml = createStarRating(professional.rating);
+                var popupContent = `
+                    <div class="d-flex align-items-start">
+                        <div>
+                            <strong>${professional.name}</strong><br>
+                            Service: ${professional.service_name}<br>
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-secondary text-white">${professional.rating}</span>
+                                <span class="ml-1 mr-1">${starRatingHtml}</span>
+                                <span class="badge bg-secondary text-white">${professional.totalreviews}</span>
+                            </div>
+                        </div>
+                        <div class="ml-auto d-flex align-items-center">
+                            <img src="/static/uploads/profile/${professional.profile_image}" class="rounded-circle" alt="Profile Image" style="width: 50px; height: 50px; object-fit: cover" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col d-flex justify-content-center">
+                            <a class="btn btn-dark btn-sm text-white mr-2" href="service/${service_id}/professional/${professional.id}" style="text-decoration: none;">
+                                View Profile
+                            </a>
+                            <a class="btn btn-dark btn-sm text-white" href="service/${service_id}/professional/${professional.id}/service_request" style="text-decoration: none;">
+                                Book Now
+                            </a>
+                        </div>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+            });
+
+            // Add the marker cluster group to the map
+            map.addLayer(markersCluster);
+
+            // Fit map bounds to show all markers
+            map.fitBounds(markersCluster.getBounds());
+        })
+        .catch(error => {
+            console.error('Error fetching professionals:', error);
+        });
+    });
+
+    document.getElementById('pincodeBtn').addEventListener('click', function() {
+        
+    var pincode = document.getElementById('pincode').value;
+    var service_id = document.getElementById('service_id').value;
+    if (pincode.length >= 3) {
+        fetch(`https://nominatim.openstreetmap.org/search?postalcode=${pincode}&format=json`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    var lat = data[0].lat;
+                    var lon = data[0].lon;
+                    map.setView([lat, lon], 14); // Recenter the map to the pincode location
+
+                    var data = {
+                        pincode: parseInt(pincode),
+                        service_id: service_id
+                    };
+                    // Clear existing markers from the map (but not the base tile layer)
+                    markersCluster.clearLayers();
+                    circlesLayer.clearLayers(); // Clear previous circles
+
+                    markersCluster.addLayer(currentUserMarker);
+                    // Send a POST request to fetch professionals based on pincode
+                    fetch(`/api/service/${service_id}/pincode_professionals`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(responseData => {
+            const professionals = responseData.data;
+            const pincodeText = isNaN(pincode) ? ' None' : ` under ${pincode}`;
+            const professionalsCount = professionals.length > 0 
+                ? `${professionals.length} professionals found${pincodeText}` 
+                : `0 professionals found${pincodeText}`;
+
+            document.getElementById('professionalsCount').textContent = professionalsCount;
+
+            // Loop through professionals and add them to the marker cluster
+            professionals.forEach(function(professional) {
+                var marker = L.marker([professional.latitude, professional.longitude]).addTo(markersCluster);
+    // Add circle for each professional's service radius
+    L.circle([professional.latitude, professional.longitude], {
+        color: 'blue',
+        fillColor: '#add8e6',
+        fillOpacity: 0.2,
+        radius: 100 // Adjust radius as needed
+    }).addTo(circlesLayer);
+
+                var starRatingHtml = createStarRating(professional.rating);
+                var popupContent = `
+                    <div class="d-flex align-items-start">
+                        <div>
+                            <strong>${professional.name}</strong><br>
+                            Service: ${professional.service_name}<br>
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-secondary text-white">${professional.rating}</span>
+                                <span class="ml-1 mr-1">${starRatingHtml}</span>
+                                <span class="badge bg-secondary text-white">${professional.totalreviews}</span>
+                            </div>
+                        </div>
+                        <div class="ml-auto d-flex align-items-center">
+                            <img src="/static/uploads/profile/${professional.profile_image}" class="rounded-circle" alt="Profile Image" style="width: 50px; height: 50px; object-fit: cover" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col d-flex justify-content-center">
+                            <a class="btn btn-dark btn-sm text-white mr-2" href="service/${service_id}/professional/${professional.id}" style="text-decoration: none;">
+                                View Profile
+                            </a>
+                            <a class="btn btn-dark btn-sm text-white" href="service/${service_id}/professional/${professional.id}/service_request" style="text-decoration: none;">
+                                Book Now
+                            </a>
+                        </div>
+                    </div>
+                `;
+                marker.bindPopup(popupContent);
+            });
+
+            // Add the marker cluster group to the map
+            map.addLayer(markersCluster);
+
+            // Fit map bounds to show all markers
+            map.fitBounds(markersCluster.getBounds());
+        })
+                    .catch(error => console.error('Error fetching professionals by pincode:', error));
+                }
+            })
+            .catch(error => console.error('Error fetching location for pincode:', error));
+    }
+});
+
+    // Function to create star rating HTML
+    function createStarRating(rating) {
+        let stars = '';
+        const fullStars = Math.floor(rating);
+        const halfStar = rating % 1 !== 0;
+        const emptyStars = 5 - Math.ceil(rating);
+
+        for (let i = 0; i < fullStars; i++) {
+            stars += '<i class="fas fa-star text-warning"></i>';
+        }
+        if (halfStar) {
+            stars += '<i class="fas fa-star-half-alt text-warning"></i>';
+        }
+        for (let i = 0; i < emptyStars; i++) {
+            stars += '<i class="far fa-star text-warning"></i>';
+        }
+        return stars;
+    }
+    </script>
+{% endblock %}

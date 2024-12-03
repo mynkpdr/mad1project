@@ -1,0 +1,44 @@
+<div class="modal fade" id="statusChangeModal" tabindex="-1" role="dialog" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="statusChangeModalLabel">Change Service Request Status</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Change the status for service request from "{{ service_request['customer']['name'] }}"?</p>
+                <div class="d-flex justify-content-around">
+                    <!-- Requested Status Button -->
+                    <form action="{{ action }}" method="POST">
+                        <input type="hidden" name="service_status" value="REQUESTED" />
+                        <input type="hidden" name="_method" value="PUT" />
+                        <button type="submit" class="btn btn-success">Requested</button>
+                    </form>
+                    <!-- Assigned Status Button -->
+                    <form action="{{ action }}" method="POST">
+                        <input type="hidden" name="service_status" value="ASSIGNED" />
+                        <input type="hidden" name="_method" value="PUT" />
+                        <button type="submit" class="btn btn-info">Assigned</button>
+                    </form>
+                    <!-- Closed Status Button -->
+                    <form action="{{ action }}" method="POST">
+                        <input type="hidden" name="service_status" value="CLOSED" />
+                        <input type="hidden" name="_method" value="PUT" />
+                        <button type="submit" class="btn btn-secondary">Closed</button>
+                    </form>
+                    <!-- Rejected Status Button -->
+                    <form action="{{ action }}" method="POST">
+                        <input type="hidden" name="service_status" value="REJECTED" />
+                        <input type="hidden" name="_method" value="PUT" />
+                        <button type="submit" class="btn btn-danger">Rejected</button>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

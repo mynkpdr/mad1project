@@ -1,0 +1,41 @@
+<div class="modal fade" id="addReviewModal" tabindex="-1" aria-labelledby="addReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addReviewModalLabel">Add Review</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{{ action }}">
+                {{ reviewForm.hidden_tag() }}
+                {{ reviewForm.professional_id(type="hidden", value=professional_idx) }}
+                {{ reviewForm.customer_id(type="hidden", value=customer_idx) }}
+                {{ reviewForm.service_request_id(type="hidden", value=service_request_idx) }}
+            <!-- Rating Selection -->
+            <div class="form-group">
+              <label for="value">Rating</label>
+              <select class="form-control" id="value" name="value">
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Average</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Worst</option>
+              </select>
+            </div>
+            
+            <!-- Comment Textarea -->
+            <div class="form-group">
+              <label for="description">Your Review</label>
+              {{ reviewForm.description(class="form-control", rows=3, placeholder="Write your review here...") }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                {{ reviewForm.submit(class="btn btn-primary") }}
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>

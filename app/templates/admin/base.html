@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    {% if current_user.role.name == "ADMIN" %}
+        <style>
+            /* Transition to hide/show sidebar */
+            #sidebar {
+                transition: all 0.3s;
+            }
+
+            /* Sidebar hidden (initially visible) */
+            .sidebar-hidden {
+                margin-left: -250px;
+                /* Width of the sidebar */
+            }
+
+            /* Ensure the hamburger button is always visible */
+            #toggleSidebar {
+                position: absolute;
+                top: 15px;
+                left: 15px;
+                z-index: 1;
+            }
+
+            /* Main content area adjusts depending on sidebar visibility */
+            .main-content {
+                margin-left: 250px;
+                transition: margin-left 0.3s;
+            }
+
+            .main-content.sidebar-hidden {
+                margin-left: 0;
+            }
+        </style>
+        <!-- Sidebar Menu -->
+        <div class="d-flex">
+            <!-- Sidebar (visible by default) -->
+            <div class="bg-dark p-3" id="sidebar" style="width: 250px;">
+                
+                <h4 class="text-white">Admin Panel</h4>
+                
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if url_for('admin.dashboard') in request.path %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('admin.dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin/customer' in request.path %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('admin.customers') }}">
+                            <i class="fas fa-users"></i> Customers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin/professional' in request.path %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('admin.professionals') }}">
+                            <i class="fas fa-briefcase"></i> Professionals
+                        </a>
+                    </li>
+                    <li class="nav-item dropright">
+                        <a class="nav-link text-white dropdown-toggle {% if url_for('admin.services') in request.path  or '/admin/service/' in request.path or url_for('admin.categories') in request.path  or '/admin/category/' in request.path %}bg-primary text-white{% else %}text-white{% endif %}" data-toggle="dropdown" aria-expanded="false" href="#">
+                            <i class="fas fa-wrench"></i> Services
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin.services') }}">View Services</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin.categories') }}">View Categories</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin/service_request' in request.path %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('admin.service_requests') }}">
+                            <i class="fas fa-calendar-check"></i> Service Requests
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin/message' in request.path %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('admin.messages') }}">
+                            <i class="fas fa-comments"></i> Messages
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if url_for('admin.profile') in request.path %}bg-primary text-white{% else %}text-white{% endif %}" href="{{ url_for('admin.profile') }}">
+                            <i class="fas fa-user-circle"></i> Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{{ url_for('auth.logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!-- Main Content Area -->
+            <div id="main-content" class="container-fluid d-flex flex-column justify-content-start align-items-center vh-100 overflow-auto">
+                {% with messages = get_flashed_messages(with_categories=True) %}
+                    {% if messages %}
+                        <div class="alert-container" style="position: relative;">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" style="opacity: 1; transition: opacity 1s ease-in-out; position: relative; z-index: 100" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <script>
+                            // Use a timeout to automatically hide alerts after 5 seconds
+                            setTimeout(function() {
+                                const alerts = document.querySelectorAll('.alert-container .alert');
+                                alerts.forEach(alert => {
+                                    alert.style.opacity = '0'; // Start fading out
+
+                                    // Wait for the fade transition to end before removing the alert
+                                    setTimeout(() => {
+                                        alert.remove(); // Remove the alert from the DOM
+                                    }, 500); // 0.5 seconds for fade-out duration
+                                });
+                            }, 5000); // 5 seconds
+                        </script>
+                    {% endif %}
+                {% endwith %}
+                <!-- Main content -->
+                <div class="container-fluid align-items-center mt-3" id="main-content">
+                    {% block main %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

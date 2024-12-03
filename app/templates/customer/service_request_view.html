@@ -1,0 +1,233 @@
+{% extends "customer/base.html" %}
+{% block title %}Service Request{% endblock %}
+{% block main %}
+<div class="container py-4 h-100">
+    <div class="row d-flex justify-content-center align-items-top h-100">
+        <div class="col-lg-8">
+            <div class="card border-light shadow-lg mb-4">
+                <div class="card-header bg-dark text-white text-center">
+                    <h4 class="mb-0">Service Request Receipt</h4>
+                    <span class="badge text-white {{ 'bg-success' if service_request['service_status'] == 'REQUESTED' else 'bg-secondary' if service_request['service_status'] == 'CLOSED' else 'bg-info' if service_request['service_status'] == 'ASSIGNED' else 'bg-danger'  }}">{{ service_request['service_status'] }}</span>
+                </div>
+                <div class="card-body">
+                    <h5 class="text-muted text-center">Customer and Professional Details</h5>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="border rounded p-3 text-center">
+                                <img src="{{ url_for('static', filename='uploads/profile/' ~ service_request['customer']['image']) }}" class="rounded-circle" alt="Customer Image" style="width: 100px; height: 100px; object-fit: cover">
+                                <h5 class="mt-2">{{ service_request['customer']['name'] }}</h5>
+                                <p>
+                                    <strong>Email:</strong> {{ service_request['customer']['email'] }}
+                                </p>
+                                <p>
+                                    <strong>Phone:</strong> {{ service_request['customer']['phone'] }}
+                                </p>
+                                <a class="btn btn-primary" href="{{ url_for('customer.profile') }}">View</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="border rounded p-3 text-center">
+                                <img src="{{ url_for('static', filename='uploads/profile/' ~ service_request['professional']['image']) }}" class="rounded-circle" alt="Professional Image" style="width: 100px; height: 100px; object-fit: cover">
+                                <h5 class="mt-2">{{ service_request['professional']['name'] }}</h5>
+                                <p>
+                                    <strong>Email:</strong> {{ service_request['professional']['email'] }}
+                                </p>
+                                <p>
+                                    <strong>Phone:</strong> {{ service_request['professional']['phone'] }}
+                                </p>
+                                <a class="btn btn-primary" href="{{ url_for('customer.service_professional', service_id=service_request['service']['id'], professional_id=service_request['professional']['id']) }}">View</a>
+                            </div>
+                        </div>
+                    </div>
+                    <h5 class="text-muted text-center">Service Details</h5>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <img src="{{ url_for('static', filename='images/' ~ service_request['service']['image']) }}" alt="Service Image" class="img-fluid rounded" style="max-height: 150px; object-fit: cover">
+                        </div>
+                        <div class="col-md-8">
+                            <h5>{{ service_request['service']['name'] }}</h5>
+                            <p>
+                                <strong>Price:</strong> &#8377; {{ service_request['professional']['service_price'] | indian_rupee_format }}
+                            </p>
+                            <p>
+                                <strong>Description:</strong> {{ service_request['service']['description'] or 'N/A' }}
+                            </p>
+                        </div>
+                    </div>
+                    <h5 class="text-muted text-center">Request Summary</h5>
+                    <hr>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item">
+                            <strong>Start Date:</strong> {{ service_request['start_date'] }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Total Days:</strong> {{ service_request['total_days'] }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Hours per Day:</strong> {{ service_request['hours_per_day'] }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Total Cost:</strong> &#8377; {{ service_request['total_cost'] | indian_rupee_format }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Date of Completion:</strong> {{ service_request['date_of_completion'] if service_request['date_of_completion'] else 'N/A' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Remarks:</strong> {{ service_request['remarks'] or 'N/A' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Date Created:</strong> {{ service_request['date_created'] }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Last Updated:</strong> {{ service_request['date_updated'] }}
+                        </li>
+                        {% if service_request['review'] %}
+                        <div class="card-header bg-warning text-dark mt-3">
+                            <h5 class="mb-0">
+                                <i class="fas fa-star"></i> Customer Review
+                            </h5>
+                        </div>
+                        <li class="list-group-item py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong><i class="fas fa-user"></i> {{ service_request['customer']['name'] }}</strong>
+                                <div class="col justify-content-between text-right">
+                                <span class="badge bg-primary text-white">
+                                    {{ service_request['review']['value'] }} / 5 <i class="fas fa-star"></i>
+
+                                </span>
+                                <button type="button" class="btn btn-danger btn-sm" style="font-size: 0.6em;;" data-toggle="modal" data-target="#confirmationModal{{ service_request['review']['id'] }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                            <!-- Confirmation Modal -->
+                                            {% set modal_id = service_request['review']['id'] %}
+                                            {% set message = "Are you sure you want to delete the review? This action cannot be undone." %}
+                                            {% set action = url_for('customer.review', id=modal_id) %}
+                                            {% include 'modals/confirmation_modal.html' %}
+                                </div>
+                            </div>
+                            <p class="small text-muted">
+                                <i class="fas fa-calendar-alt"></i> Reviewed on <strong>{{ service_request['review']['date_created'] }}</strong>
+                            </p>
+                            <p class="mt-2">{{ service_request['review']['description'] }}</p>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <div class="text-center">
+                        <div class="d-flex justify-content-center">
+                            <a href="{{url_for('customer.dashboard')}}" class="btn btn-secondary mx-2">Back to Dashboard</a>
+                            {% if service_request['service_status'] == 'REQUESTED' %}
+                            <button class="btn btn-primary mx-2" data-toggle="modal" data-target="#editStartDateModal">Edit Start Date</button>
+                            {% endif %}
+                            <button class="btn btn-primary mx-2" data-toggle="modal" data-target="#remarksModal">Add Remark</button>
+                            {% if service_request['service_status'] == "CLOSED" %}
+                                {% if service_request['review'] %}
+                                {% else %}
+                                <button class="btn btn-primary mx-2" data-toggle="modal" data-target="#addReviewModal">Add Review</button>
+                                {% endif %}
+                            {% endif %}
+                            {% if service_request['service_status'] == 'ASSIGNED' %}
+                                <!-- Change Status Button -->
+                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#statusChangeModal">Change Status</button>
+                                <div class="modal fade" id="statusChangeModal" tabindex="-1" role="dialog" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-dark text-white">
+                                                <h5 class="modal-title" id="statusChangeModalLabel">Change Service Request Status</h5>
+                                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Change the status for service request?</p>
+                                                <div class="d-flex justify-content-around">
+                                                    <!-- Closed Status Button -->
+                                                    <form action="{{ url_for('customer.service_request_view', id=service_request['id']) }}" method="POST">
+                                                        <input type="hidden" name="service_status" value="CLOSED" />
+                                                        <input type="hidden" name="_method" value="PUT" />
+                                                        <button type="submit" class="btn btn-secondary">Closed</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if service_request['service_status'] == 'REQUESTED' %}
+    <!-- Modal for Editing Start Date -->
+    <div class="modal fade" id="editStartDateModal" tabindex="-1" role="dialog" aria-labelledby="editStartDateModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="editStartDateModalLabel">Edit Start Date?</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{url_for('customer.service_request_view', id=service_request['id'])}}">
+                        <div class="form-group">
+                            <label for="start_date">Start Date</label>
+                            <input type="hidden" name="_method" value="PUT" />
+                            <input class="form-control" id="start_date" name="start_date" required type="date">
+
+                            <script>
+                                // Example date in 'Month Day, Year' format
+                                let dateStr = "{{service_request['start_date']}}";
+                            
+                                // Convert to a Date object
+                                let dateObj = new Date(dateStr);
+                            
+                                // Format the date to 'YYYY-MM-DD'
+                                let dateOnly = dateObj.getFullYear() + '-' + (dateObj.getMonth() + 1).toString().padStart(2, '0') + '-' + dateObj.getDate().toString().padStart(2, '0');
+                            
+                                // Set the value of the input field
+                                document.getElementById('start_date').value = dateOnly;
+                            </script>
+                            
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Set today's date as the minimum date for the start date input
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start_date').setAttribute('min', today);
+        });
+    </script>
+    {% endif %}
+
+    {% if service_request['service_status'] == "CLOSED" %}
+    {% if service_request['review'] %}
+    {% else %}
+        <!-- Add Review Modal -->
+        {% set professional_idx = service_request['professional']['id'] %}
+        {% set customer_idx = service_request['customer']['id'] %}
+        {% set service_request_idx = service_request['id'] %}
+        {% set action = url_for('customer.reviews') %}
+        {% include 'modals/add_review_modal.html' %} 
+
+    {% endif %}
+{% endif %}
+    <!-- Modal for Adding Remark -->
+
+    {% set action = url_for('customer.service_request_view', id=service_request['id']) %}
+    {% include 'modals/add_remark_modal.html' %} 
+  
+</div>
+{% endblock %}
