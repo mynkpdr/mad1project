@@ -10,6 +10,35 @@
 
 This project is part of the **Modern Application Development - I** course at **IIT Madras** and focuses on building a multi-user web application for **household services**. Verified professionals can provide essential home services such as **Electrical, Carpentry, Plumbing, Appliance Repair**, etc., to customers. 
 
+## Screenshots
+
+| | | |
+|:-------------------------:|:-------------------------:|:-------------------------:|
+|<img width="1604" alt="Admin Dashboard" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099238/screenshots/qo7sryq6vz07rhangmvt.png">Admin Dashboard | <img width="1604" alt="Admin Service Requests" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099237/screenshots/ug2uw5w1rq3hvwphclws.png">Service Requests | <img width="1604" alt="Admin Service Request Receipt" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099237/screenshots/pfz3ok6dtmsrnaes6lpj.png">Service Request Receipt |
+|<img width="1604" alt="Professionals" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099237/screenshots/bc9ewsumzu4weqbwst9b.png">Professionals | <img width="1604" alt="Search by Distance or Pincode" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099238/screenshots/ls3hznsi3nwixnk6sscc.png">Search by Distance or Pincode | <img width="1604" alt="Professional Signup" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099237/screenshots/ibcmezxsfoobe6m1mz5x.png">Signup |
+
+<table>
+   <tr>
+     <td>
+       <div>
+         <div><img alt="Add Service Request" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735100788/screenshots/oe8cxdqpzw0azeuv7k25.png" width="600"/></div>
+         <div><img alt="Professional Profile" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735100788/screenshots/i9mloq2rxt8fpf5d58sw.png" width="600"/></div>
+       </div>
+     </td>
+     <td>
+       <img alt="Swagger UI" src="https://res.cloudinary.com/dohhiwhug/image/upload/v1735099237/screenshots/e1ipjm5chgqmvizllnte.png" width="400"/>
+     </td>
+   </tr>
+</table>
+
+
+
+
+
+
+
+
+
 ### Key Features:
 - Customers can request services from their chosen professional.
 - Professionals can either accept or reject service requests.
