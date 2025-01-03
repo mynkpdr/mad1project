@@ -142,8 +142,8 @@ This project includes **53 API routes**, each designed to handle specific functi
 ### Setup Instructions:
 1. Clone the repository:
 ```bash
-git clone https://github.com/mynkpdr/mad1practice
-cd mad1practice
+git clone https://github.com/mynkpdr/mad1project
+cd mad1project
  ```
 2. Create a virtual environment:
 ```bash
